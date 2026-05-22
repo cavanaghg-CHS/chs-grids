@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Bathy Map</title>
+
+  <!-- MapLibre CSS -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+
+  <!-- Mapbox Draw CSS -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.css">
+
+  <style>
+    html, body, #map {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+.selection-panel {
+  position: absolute;
+  top: 10px;
+  left: 70px;
+  width: 280px;
+
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: saturate(120%) blur(4px);
+
+  padding: 12px 14px;
+  font-size: 13px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #1f2937;
+
+  border-radius: 10px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+
+  z-index: 10;
+}
+
+
+.action-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  color: #ffffff;
+  background: linear-gradient(180deg, #2563eb, #1e40af);
+
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.action-btn:hover {
+  filter: brightness(1.05);
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+
+/* Clean OpenLayers-style toolbar */
+.toolbox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,0.95);
+  padding: 6px;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  z-index: 20;
+}
+
+
+.toolbox .tool-btn img {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.toolbox button svg {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+    
+.toolbox button {
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 6px;
+  background: #f3f3f3;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.toolbox button:hover {
+  background: #e5e5e5;
+}
+
+.toolbox button.active {
+  background: #ffd700;
+}
+
+/* Remove Mapbox Draw default UI */
+.mapbox-gl-draw_ctrl-draw-btn,
+.mapbox-gl-draw_ctrl-trash {
+  display: none !important;
+}
+
+.selection-panel strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  margin-bottom: 8px;
+}
+
+
+#selectionList {
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-right: 4px;
+}
+
+.selection-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 6px 8px;
+  margin-bottom: 4px;
+
+  background: #f8f9fb;
+  border-radius: 6px;
+  font-size: 12px;
+
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
+}
+
+
+
+
+    
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+  
+<div class="toolbox">
+  
+<button id="toolSelect" title="Select" class="tool-btn">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true">
+    <path
+      d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z"
+      fill="#0f172a"/>
+  </svg>
+</button>
+
+  <button id="toolPolygon" title="Polygon">⬠</button>
+  <button id="toolLine" title="Line select">／</button>
+  <button id="zoomIn" title="Zoom in">+</button>
+  <button id="zoomOut" title="Zoom out">−</button>
+</div>
+
+
+<div class="selection-panel">
+  <strong id="panelTitle"></strong>
+  <div id="selectionList"></div>
+  <button id="clearBtn" class="action-btn">Clear all</button>
+  <button id="exportCsvBtn" class="action-btn">Export CSV</button>
+  <button id="exportJsonBtn" class="action-btn">Export JSON</button>
+</div>
+
+<!-- ✅ MapLibre JS -->
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+<!-- ✅ REQUIRED alias for Mapbox Draw -->
+<script>
+  window.mapboxgl = maplibregl;
+</script>
+
+<!-- ✅ Mapbox Draw JS -->
+<script src="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.js"></script>
+
+<!-- ✅ Turf JS (FIXED) -->
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+<script>
+const isFrench = navigator.language?.toLowerCase().startsWith("fr");
+const UI = isFrench
+  ? {
+      // Panel
+      selectedDocuments: "Documents sélectionnés",
+      clearAll: "Tout effacer",
+      exportCsv: "Exporter CSV",
+      exportJson: "Exporter JSON",
+
+      // Toolbar tooltips
+      select: "Sélectionner",
+      polygon: "Sélection par polygone",
+      line: "Sélection par ligne",
+      delete: "Supprimer la géométrie",
+      zoomIn: "Zoom avant",
+      zoomOut: "Zoom arrière",
+
+      // Popup labels
+      documentId: "Id du document",
+      date: "Date"
+    }
+  : {
+      // Panel
+      selectedDocuments: "Selected Documents",
+      clearAll: "Clear all",
+      exportCsv: "Export CSV",
+      exportJson: "Export JSON",
+
+      // Toolbar tooltips
+      select: "Select",
+      polygon: "Polygon select",
+      line: "Line select",
+      delete: "Delete geometry",
+      zoomIn: "Zoom in",
+      zoomOut: "Zoom out",
+
+      // Popup labels
+      documentId: "Document ID",
+      date: "Date"
+    };
+
+const STYLE_EN =
+  "https://www.arcgis.com/sharing/rest/content/items/800d755712e8415aab301b9d55bc2800/resources/styles/root.json";
+const STYLE_FR =
+  "https://www.arcgis.com/sharing/rest/content/items/70e9deb5019d49cc88c6543887db9db5/resources/styles/root.json";
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: isFrench ? STYLE_FR : STYLE_EN,
+  center: [-96, 62],
+  zoom: 3,
+  attributionControl: false
+});
+
+const draw = new MapboxDraw({
+  displayControlsDefault: false,
+  controls: { polygon: true, line_string: true, trash: true },
+
+  styles: [
+    /* =========================================
+       ACTIVE POLYGON FILL  (ArcGIS Pro style)
+       ========================================= */
+    {
+      id: "gl-draw-polygon-fill-active",
+      type: "fill",
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "Polygon"]
+      ],
+      paint: {
+        "fill-color": "#4EA5FF",
+        "fill-opacity": 0.15
+      }
+    },
+
+    /* =========================================
+       POLYGON OUTLINE
+       ========================================= */
+    {
+      id: "gl-draw-polygon-stroke-active",
+      type: "line",
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "Polygon"]
+      ],
+      paint: {
+        "line-color": "#2563EB",
+        "line-width": 2
+      }
+    },
+
+    /* =========================================
+       POLYGON VERTICES
+       ========================================= */
+    {
+      id: "gl-draw-polygon-and-line-vertex-active",
+      type: "circle",
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "meta", "vertex"]
+      ],
+      paint: {
+        "circle-radius": 4,
+        "circle-color": "#FFFFFF",
+        "circle-stroke-color": "#2563EB",
+        "circle-stroke-width": 2
+      }
+    },
+
+    /* =========================================
+       LINE STRING (ACTIVE)
+       ========================================= */
+    {
+      id: "gl-draw-line-active",
+      type: "line",
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "LineString"]
+      ],
+      paint: {
+        "line-color": "#2563EB",
+        "line-width": 2
+      }
+    },
+
+    /* =========================================
+       LINE STRING (INACTIVE)
+       ========================================= */
+    {
+      id: "gl-draw-line-inactive",
+      type: "line",
+      filter: [
+        "all",
+        ["==", "active", "false"],
+        ["==", "$type", "LineString"]
+      ],
+      paint: {
+        "line-color": "#2563EB",
+        "line-width": 2,
+        "line-opacity": 0.6
+      }
+    },
+
+    /* =========================================
+       LINE VERTICES
+       ========================================= */
+    {
+      id: "gl-draw-line-vertex-active",
+      type: "circle",
+      filter: [
+        "all",
+        ["==", "meta", "vertex"],
+        ["==", "$type", "Point"]
+      ],
+      paint: {
+        "circle-radius": 4,
+        "circle-color": "#FFFFFF",
+        "circle-stroke-color": "#2563EB",
+        "circle-stroke-width": 2
+      }
+    }
+  ]
+});
+
+
+
+  
+map.addControl(draw, "top-left");
+  
+function setActive(btn) {
+  document.querySelectorAll(".toolbox button")
+    .forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+toolSelect.onclick = e => {
+  draw.changeMode("simple_select");
+  setActive(e.target);
+};
+
+toolPolygon.onclick = e => {
+  draw.changeMode("draw_polygon");
+  setActive(e.target);
+};
+
+toolLine.onclick = e => {
+  draw.changeMode("draw_line_string");
+  setActive(e.target);
+};
+// ---- Toolbar tooltips (language-dependent) ----
+toolSelect.title = UI.select;
+toolPolygon.title = UI.polygon;
+toolLine.title = UI.line;
+zoomIn.title = UI.zoomIn;
+zoomOut.title = UI.zoomOut;
+
+
+zoomIn.onclick = () => map.zoomIn();
+zoomOut.onclick = () => map.zoomOut();
+
+// Default mode
+draw.changeMode("simple_select");
+setActive(toolSelect);
+
+
+const selectedDocs = new Set();
+  // ---- Hover popup for document ID ----
+const hoverPopup = new maplibregl.Popup({
+  closeButton: false,
+  closeOnClick: false,
+  offset: 8
+});
+  // ---- UI text (language-dependent) ----
+document.getElementById("panelTitle").textContent = UI.selectedDocuments;
+
+clearBtn.textContent = UI.clearAll;
+exportCsvBtn.textContent = UI.exportCsv;
+exportJsonBtn.textContent = UI.exportJson;
+const listEl = document.getElementById("selectionList");
+
+function updateList() {
+  listEl.innerHTML = "";
+  selectedDocs.forEach(id => {
+    const row = document.createElement("div");
+    row.className = "selection-item";
+    row.innerHTML = `<span>${id}</span><button>✕</button>`;
+    row.querySelector("button").onclick = () => deselect(id);
+    listEl.appendChild(row);
+  });
+}
+
+function select(id) {
+  if (selectedDocs.has(id)) return;
+  selectedDocs.add(id);
+  map.setFeatureState({ source: "bathy", id }, { selected: true });
+  updateList();
+}
+
+function deselect(id) {
+  selectedDocs.delete(id);
+  map.setFeatureState({ source: "bathy", id }, { selected: false });
+  updateList();
+}
+
+document.getElementById("clearBtn").onclick = () => {
+  selectedDocs.forEach(id =>
+    map.setFeatureState({ source: "bathy", id }, { selected: false })
+  );
+  selectedDocs.clear();
+  updateList();
+};
+
+document.getElementById("exportCsvBtn").onclick = () => {
+  const blob = new Blob([Array.from(selectedDocs).join("\n")], { type: "text/csv" });
+  download(blob, "selected_documents.csv");
+};
+
+document.getElementById("exportJsonBtn").onclick = () => {
+  const blob = new Blob(
+    [JSON.stringify(Array.from(selectedDocs), null, 2)],
+    { type: "application/json" }
+  );
+  download(blob, "selected_documents.json");
+};
+
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+let cached = [];
+  let isDrawing = false;
+function formatDate(value) {
+  if (!value) return "—";
+
+  let d = null;
+
+  // Case 1: YYYYMMDD (e.g. 20190315)
+  if (typeof value === "string" && /^\d{8}$/.test(value)) {
+    const yyyy = value.slice(0, 4);
+    const mm = value.slice(4, 6);
+    const dd = value.slice(6, 8);
+    d = new Date(`${yyyy}-${mm}-${dd}`);
+  }
+  // Case 2: ISO or ISO-like string
+  else {
+    d = new Date(value);
+  }
+
+  if (isNaN(d)) return "—";
+
+  return new Intl.DateTimeFormat(
+    isFrench ? "fr-CA" : "en-CA",
+    {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }
+  ).format(d);
+}
+
+
+map.on("load", () => {
+map.addSource("bathy", {
+  type: "geojson",
+  data: "https://raw.githubusercontent.com/cavanaghg-chs/bathy_map/main/data/product-results.geojson",
+  promoteId: "SORID"
+});
+map.addLayer({
+  id: "bathy-fill",
+  type: "fill",
+  source: "bathy",
+  paint: {
+    "fill-color": "#6B8E7A",
+    "fill-opacity": [
+      "case",
+      ["boolean", ["feature-state", "hover"], false], 0.6,
+      0.45
+    ]
+  }
+});
+
+map.addLayer({
+  id: "bathy-outline",
+  type: "line",
+  source: "bathy",
+  paint: {
+    "line-color": [
+      "case",
+      ["boolean", ["feature-state", "selected"], false], "#FFD700",
+      ["boolean", ["feature-state", "hover"], false], "#2563EB",
+      "#004d00"
+    ],
+    "line-width": [
+      "case",
+      ["boolean", ["feature-state", "hover"], false], 3,
+      2
+    ]
+  }
+});
+map.once("idle", () => {
+  cached = map.querySourceFeatures("bathy");
+});
+
+map.on("click", "bathy-fill", e => {
+  if (isDrawing) return;
+  select(e.features[0].id);
+});
+
+let hoveredId = null;
+  let popupId = null;
+map.on("draw.modechange", e => {
+  isDrawing = e.mode !== "simple_select";
+
+  // ✅ Sync toolbar state to mode
+  if (e.mode === "simple_select") setActive(toolSelect);
+  if (e.mode === "draw_polygon") setActive(toolPolygon);
+  if (e.mode === "draw_line_string") setActive(toolLine);
+
+  // ✅ Clear hover immediately when drawing starts
+  if (isDrawing && hoveredId !== null) {
+    map.setFeatureState(
+      { source: "bathy", id: hoveredId },
+      { hover: false }
+    );
+    hoveredId = null;
+    hoverPopup.remove();
+    map.getCanvas().style.cursor = "";
+  }
+});
+
+map.on("mousemove", "bathy-fill", e => {
+  // ✅ Disable hover while drawing
+  if (isDrawing) return;
+
+  const id = e.features[0].id;
+
+  if (hoveredId !== null && hoveredId !== id) {
+    map.setFeatureState({ source: "bathy", id: hoveredId }, { hover: false });
+  }
+
+  hoveredId = id;
+  map.setFeatureState({ source: "bathy", id }, { hover: true });
+
+  map.getCanvas().style.cursor = "pointer";
+const props = e.features[0].properties;
+const date = formatDate(props?.SUREND);
+
+if (popupId !== id) {
+  hoverPopup
+    .setLngLat(e.lngLat)
+    .setHTML(`
+      <strong>${UI.documentId}:</strong> ${id}<br>
+      <strong>${UI.date}:</strong> ${date}
+    `)
+    .addTo(map);
+  popupId = id;
+}
+
+});
+
+map.on("mouseleave", "bathy-fill", () => {
+  if (hoveredId !== null) {
+    map.setFeatureState({ source: "bathy", id: hoveredId }, { hover: false });
+  }
+  hoveredId = null;
+  map.getCanvas().style.cursor = "";
+  hoverPopup.remove();
+  popupId = null;
+});
+
+});
+
+map.on("draw.create", e => {
+  const drawn = e.features[0];
+
+  const isValid = f =>
+    f.geometry &&
+    f.geometry.coordinates &&
+    f.geometry.coordinates.length > 0;
+
+  if (drawn.geometry.type === "Polygon") {
+    cached.filter(isValid).forEach(f => {
+      if (turf.booleanIntersects(drawn, f)) {
+        select(f.id);
+      }
+    });
+  }
+
+  if (drawn.geometry.type === "LineString") {
+    const buffered = turf.buffer(drawn, 0.5, { units: "kilometers" });
+
+    cached.filter(isValid).forEach(f => {
+      if (turf.booleanIntersects(buffered, f)) {
+        select(f.id);
+      }
+    });
+  }
+
+// ✅ UX polish
+draw.deleteAll();
+draw.changeMode("simple_select");
+
+
+
+});
+  
+</script>
+
+
+</body>
+</html>
