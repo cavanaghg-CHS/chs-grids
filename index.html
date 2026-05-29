@@ -20,8 +20,9 @@
     }
 .layers-panel {
   position: absolute;
-  top: 140px; /* below toolbox */
+  top: 210px;   /* ✅ better spacing below zoom */
   left: 10px;
+  width: 170px; /* ✅ prevents stretching */
 
   background: rgba(255,255,255,0.92);
   backdrop-filter: blur(6px);
@@ -32,6 +33,15 @@
   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   z-index: 20;
 }
+
+.switch {
+  margin-left: auto;
+}
+
+.switch-row {
+  background: rgba(0,0,0,0.03);
+}
+  
 /* ----- Layer UI polish ----- */
 .layer-group {
   display: flex;
@@ -40,8 +50,9 @@
   padding: 4px 2px;
 }
 
-.layer-title {
-  font-size: 11px;
+.layer-title {  
+font-size: 10px;
+  opacity: 0.7;
   font-weight: 600;
   color: #475569;
   text-transform: uppercase;
@@ -52,11 +63,16 @@
 /* Switch row layout */
 .switch-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 2px 4px;
+  gap: 10px;          /* ✅ consistent spacing */
+  padding: 5px 6px;
   border-radius: 6px;
   transition: background 0.15s;
+}
+
+
+.switch-row span:first-child {
+  flex: 1;            /* ✅ text takes full space */
 }
 
 .switch-row:hover {
@@ -66,50 +82,6 @@
 /* Label text */
 .switch-row span {
   font-size: 12px;
-}
-    
-.selection-panel {
-  position: absolute;
-  top: 10px;
-  left: 70px;
-  width: 280px;
-
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: saturate(120%) blur(4px);
-
-  padding: 12px 14px;
-  font-size: 13px;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  color: #1f2937;
-
-  border-radius: 10px;
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.18),
-    0 2px 6px rgba(0, 0, 0, 0.08);
-
-  z-index: 10;
-}
-
-
-.action-btn {
-  width: 100%;
-  margin-top: 6px;
-  padding: 7px 10px;
-
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-
-  color: #ffffff;
-  background: linear-gradient(180deg, #2563eb, #1e40af);
-
-  border: none;
-  border-radius: 7px;
-  cursor: pointer;
-
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    0 4px 10px rgba(37, 99, 235, 0.25);
 }
 
 .action-btn:hover {
@@ -131,12 +103,12 @@
 
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 
   background: rgba(255,255,255,0.92);
   backdrop-filter: blur(6px);
 
-  padding: 6px;
+  padding: 4px;
   border-radius: 8px;
 
   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
@@ -158,19 +130,18 @@
 
     
 .toolbox button {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #f3f3f3;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .toolbox button:hover {
@@ -183,10 +154,6 @@
 
 .toolbox button {
   transition: background 0.15s;
-}
-
-.toolbox {
-  min-width: 140px;
 }
 
 /* ----- Divider line between groups ----- */
@@ -249,34 +216,6 @@
   display: none !important;
 }
 
-.selection-panel strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  margin-bottom: 8px;
-}
-
-
-#selectionList {
-  max-height: 180px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-  padding-right: 4px;
-}
-
-
-.selection-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  margin-bottom: 4px;
-  background: #f8f9fb;
-  border-radius: 6px;
-  font-size: 12px;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
-}
 
     
   </style>
