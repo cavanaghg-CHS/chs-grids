@@ -458,19 +458,19 @@ function updateList() {
 function select(id) {
   if (selectedDocs.has(id)) return;
   selectedDocs.add(id);
-  map.setFeatureState({ source: "bathy", id }, { selected: true });
+  map.setFeatureState({ source: "ports", id }, { selected: true });
   updateList();
 }
 
 function deselect(id) {
   selectedDocs.delete(id);
-  map.setFeatureState({ source: "bathy", id }, { selected: false });
+  map.setFeatureState({ source: "ports", id }, { selected: false });
   updateList();
 }
 
 document.getElementById("clearBtn").onclick = () => {
   selectedDocs.forEach(id =>
-    map.setFeatureState({ source: "bathy", id }, { selected: false })
+    map.setFeatureState({ source: "ports", id }, { selected: false })
   );
   selectedDocs.clear();
   updateList();
@@ -530,43 +530,97 @@ function formatDate(value) {
 
 
 map.on("load", () => {
-map.addSource("bathy", {
+  map.addSource("overview", {
   type: "geojson",
-  data: "https://raw.githubusercontent.com/cavanaghg-chs/bathy_map/main/data/product-results.geojson",
-  promoteId: "SORID"
-});
-map.addLayer({
-  id: "bathy-fill",
-  type: "fill",
-  source: "bathy",
-  paint: {
-    "fill-color": "#6B8E7A",
-    "fill-opacity": [
-      "case",
-      ["boolean", ["feature-state", "hover"], false], 0.6,
-      0.45
-    ]
-  }
+  data: "data/Overview.geojson"
 });
 
 map.addLayer({
-  id: "bathy-outline",
-  type: "line",
-  source: "bathy",
+  id: "overview-fill",
+  type: "fill",
+  source: "overview",
   paint: {
-    "line-color": [
-      "case",
-      ["boolean", ["feature-state", "selected"], false], "#FFD700",
-      ["boolean", ["feature-state", "hover"], false], "#2563EB",
-      "#004d00"
-    ],
-    "line-width": [
-      "case",
-      ["boolean", ["feature-state", "hover"], false], 3,
-      2
-    ]
+    "fill-color": "#4B9CD3",
+    "fill-opacity": 0.35
   }
 });
+
+  map.addSource("transit", {
+  type: "geojson",
+  data: "data/Transit.geojson"
+});
+
+map.addLayer({
+  id: "transit-line",
+  type: "line",
+  source: "transit",
+  paint: {
+    "line-color": "#FF5733",
+    "line-width": 2
+  }
+});
+
+Promise.all([
+  fetch("data/Port_0.geojson").then(r => r.json()),
+  fetch("data/Port_1.geojson").then(r => r.json()),
+  fetch("data/Port_2.geojson").then(r => r.json()),
+  fetch("data/Port_3.geojson").then(r => r.json()),
+  fetch("data/Port_4.geojson").then(r => r.json()),
+  fetch("data/Port_5.geojson").then(r => r.json()),
+  fetch("data/Port_6.geojson").then(r => r.json()),
+  fetch("data/Port_7.geojson").then(r => r.json()),
+  fetch("data/Port_8.geojson").then(r => r.json()),
+  fetch("data/Port_9.geojson").then(r => r.json())
+]).then(files => {
+  const merged = {
+    type: "FeatureCollection",
+    features: files.flatMap(f => f.features)
+  };
+
+  map.addSource("ports", {
+    type: "geojson",
+    data: merged,
+    promoteId: "SORID"
+  });
+
+  map.addLayer({
+    id: "ports-fill",
+    type: "fill",
+    source: "ports",
+    paint: {
+      "fill-color": "#6B8E7A",
+      "fill-opacity": [
+        "case",
+        ["boolean", ["feature-state", "hover"], false], 0.6,
+        0.45
+      ]
+    }
+  });
+
+  map.addLayer({
+    id: "ports-outline",
+    type: "line",
+    source: "ports",
+    paint: {
+      "line-color": [
+        "case",
+        ["boolean", ["feature-state", "selected"], false], "#FFD700",
+        ["boolean", ["feature-state", "hover"], false], "#2563EB",
+        "#004d00"
+      ],
+      "line-width": [
+        "case",
+        ["boolean", ["feature-state", "hover"], false], 3,
+        2
+      ]
+    }
+  });
+
+  cached = merged.features;
+});
+
+
+
 map.once("idle", () => {
   cached = map.querySourceFeatures("bathy");
 });
@@ -589,7 +643,7 @@ map.on("draw.modechange", e => {
   // ✅ Clear hover immediately when drawing starts
   if (isDrawing && hoveredId !== null) {
     map.setFeatureState(
-      { source: "bathy", id: hoveredId },
+      { source: "ports", id: hoveredId },
       { hover: false }
     );
     hoveredId = null;
@@ -605,11 +659,11 @@ map.on("mousemove", "bathy-fill", e => {
   const id = e.features[0].id;
 
   if (hoveredId !== null && hoveredId !== id) {
-    map.setFeatureState({ source: "bathy", id: hoveredId }, { hover: false });
+    map.setFeatureState({ source: "ports", id: hoveredId }, { hover: false });
   }
 
   hoveredId = id;
-  map.setFeatureState({ source: "bathy", id }, { hover: true });
+  map.setFeatureState({ source: "ports", id }, { hover: true });
 
   map.getCanvas().style.cursor = "pointer";
 const props = e.features[0].properties;
@@ -630,7 +684,7 @@ if (popupId !== id) {
 
 map.on("mouseleave", "bathy-fill", () => {
   if (hoveredId !== null) {
-    map.setFeatureState({ source: "bathy", id: hoveredId }, { hover: false });
+    map.setFeatureState({ source: "ports", id: hoveredId }, { hover: false });
   }
   hoveredId = null;
   map.getCanvas().style.cursor = "";
