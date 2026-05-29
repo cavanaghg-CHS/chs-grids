@@ -619,13 +619,7 @@ Promise.all([
   cached = merged.features;
 });
 
-
-
-map.once("idle", () => {
-  cached = map.querySourceFeatures("bathy");
-});
-
-map.on("click", "bathy-fill", e => {
+map.on("click", "ports-fill", e => {
   if (isDrawing) return;
   select(e.features[0].id);
 });
@@ -652,7 +646,7 @@ map.on("draw.modechange", e => {
   }
 });
 
-map.on("mousemove", "bathy-fill", e => {
+map.on("mousemove", "ports-fill", e => {
   // ✅ Disable hover while drawing
   if (isDrawing) return;
 
@@ -682,7 +676,7 @@ if (popupId !== id) {
 
 });
 
-map.on("mouseleave", "bathy-fill", () => {
+map.on("mouseleave", "ports-fill", () => {
   if (hoveredId !== null) {
     map.setFeatureState({ source: "ports", id: hoveredId }, { hover: false });
   }
