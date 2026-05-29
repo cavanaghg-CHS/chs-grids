@@ -163,6 +163,31 @@
 
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
 }
+.layer-panel {
+  position: absolute;
+  top: 120px;
+  left: 10px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  background: rgba(255,255,255,0.95);
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-family: system-ui;
+
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  z-index: 20;
+}
+
+.layer-panel label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
 
 
@@ -176,7 +201,7 @@
 <div id="map"></div>
   
 <div class="toolbox">
-  
+
 <button id="toolSelect" title="Select" class="tool-btn">
   <svg
     width="16"
@@ -196,6 +221,24 @@
   <button id="zoomOut" title="Zoom out">−</button>
 </div>
 
+  <div class="layer-panel">
+
+  <label>
+    <input type="checkbox" id="toggleOverview" checked>
+    Overview
+  </label>
+
+  <label>
+    <input type="checkbox" id="toggleTransit">
+    Transit
+  </label>
+
+  <label>
+    <input type="checkbox" id="togglePorts">
+    Ports
+  </label>
+
+</div>
 
 <div class="selection-panel">
   <strong id="panelTitle"></strong>
@@ -514,7 +557,30 @@ map.on("load", () => {
   type: "geojson",
   data: "data/Overview.geojson"
 });
+// ---- TOGGLE: OVERVIEW ----
+document.getElementById("toggleOverview").onchange = e => {
+  map.setLayoutProperty(
+    "overview-fill",
+    "visibility",
+    e.target.checked ? "visible" : "none"
+  );
+};
 
+// ---- TOGGLE: TRANSIT ----
+document.getElementById("toggleTransit").onchange = e => {
+  const visibility = e.target.checked ? "visible" : "none";
+
+  map.setLayoutProperty("transit-fill", "visibility", visibility);
+  map.setLayoutProperty("transit-outline", "visibility", visibility);
+};
+
+// ---- TOGGLE: PORTS ----
+document.getElementById("togglePorts").onchange = e => {
+  const visibility = e.target.checked ? "visible" : "none";
+
+  map.setLayoutProperty("ports-fill", "visibility", visibility);
+  map.setLayoutProperty("ports-outline", "visibility", visibility);
+};
 map.addLayer({
   id: "overview-fill",
   type: "fill",
@@ -580,6 +646,7 @@ Promise.all([
     id: "ports-fill",
     type: "fill",
     source: "ports",
+    layout: { visibility: "none" },
     paint: {
       "fill-color": "#6B8E7A",
       "fill-opacity": [
@@ -594,6 +661,7 @@ Promise.all([
     id: "ports-outline",
     type: "line",
     source: "ports",
+    layout: { visibility: "none" },
     paint: {
       "line-color": [
         "case",
