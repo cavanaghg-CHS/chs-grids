@@ -499,35 +499,15 @@ function download(blob, name) {
 
 let cached = [];
   let isDrawing = false;
-function formatDate(value) {
-  if (!value) return "—";
-
-  let d = null;
-
-  // Case 1: YYYYMMDD (e.g. 20190315)
-  if (typeof value === "string" && /^\d{8}$/.test(value)) {
-    const yyyy = value.slice(0, 4);
-    const mm = value.slice(4, 6);
-    const dd = value.slice(6, 8);
-    d = new Date(`${yyyy}-${mm}-${dd}`);
-  }
-  // Case 2: ISO or ISO-like string
-  else {
-    d = new Date(value);
-  }
-
-  if (isNaN(d)) return "—";
-
-  return new Intl.DateTimeFormat(
-    isFrench ? "fr-CA" : "en-CA",
-    {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }
-  ).format(d);
+function isValid(feature) {
+  return (
+    feature &&
+    feature.geometry &&
+    feature.geometry.type &&
+    feature.geometry.coordinates &&
+    feature.geometry.coordinates.length > 0
+  );
 }
-
 
 map.on("load", () => {
   map.addSource("overview", {
@@ -571,7 +551,7 @@ map.addLayer({
     "line-width": 1.5
   }
 });
-``
+
 
 Promise.all([
   fetch("data/Port_0.geojson").then(r => r.json()),
@@ -674,16 +654,14 @@ map.on("mousemove", "ports-fill", e => {
 
   map.getCanvas().style.cursor = "pointer";
 const props = e.features[0].properties;
-const date = formatDate(props?.SUREND);
 
 if (popupId !== id) {
-  hoverPopup
-    .setLngLat(e.lngLat)
-    .setHTML(`
-      <strong>${UI.documentId}:</strong> ${id}<br>
-      <strong>${UI.date}:</strong> ${date}
-    `)
-    .addTo(map);
+hoverPopup
+  .setLngLat(e.lngLat)
+  .setHTML(`
+    <strong>${UI.documentId}:</strong> ${id}
+  `)
+  .addTo(map);
   popupId = id;
 }
 
@@ -700,54 +678,63 @@ map.on("mouseleave", "ports-fill", () => {
 });
 
 });
+function runSelection(drawn) {
 
-if (drawn.geometry.type === "Polygon") {
+  // ✅ Polygon selection
+  if (drawn.geometry.type === "Polygon") {
 
-  const drawnBBox = turf.bbox(drawn);
-  const drawnBBoxPoly = turf.bboxPolygon(drawnBBox);
+    const drawnBBox = turf.bbox(drawn);
+    const drawnBBoxPoly = turf.bboxPolygon(drawnBBox);
 
-  cached.filter(f => {
-    if (!isValid(f)) return false;
+    cached
+      .filter(f => {
+        if (!isValid(f)) return false;
 
-    const fBBox = turf.bbox(f);
-    const fBBoxPoly = turf.bboxPolygon(fBBox);
+        const fBBox = turf.bbox(f);
+        const fBBoxPoly = turf.bboxPolygon(fBBox);
 
-    return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
-  })
-  .forEach(f => {
-    if (turf.booleanIntersects(drawn, f)) {
-      select(f.id);
-    }
-  });
-}
+        return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
+      })
+      .forEach(f => {
+        if (turf.booleanIntersects(drawn, f)) {
+          select(f.id);
+        }
+      });
+  }
 
-
+  // ✅ Line selection
   if (drawn.geometry.type === "LineString") {
+
     const buffered = turf.buffer(drawn, 0.5, { units: "kilometers" });
 
     const bufferBBox = turf.bbox(buffered);
-const bufferBBoxPoly = turf.bboxPolygon(bufferBBox);
+    const bufferBBoxPoly = turf.bboxPolygon(bufferBBox);
 
-cached.filter(f => {
-  if (!isValid(f)) return false;
+    cached
+      .filter(f => {
+        if (!isValid(f)) return false;
 
-  const fBBox = turf.bbox(f);
-  const fBBoxPoly = turf.bboxPolygon(fBBox);
+        const fBBox = turf.bbox(f);
+        const fBBoxPoly = turf.bboxPolygon(fBBox);
 
-  return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
-})
-.forEach(f => {
-  if (turf.booleanIntersects(buffered, f)) {
-    select(f.id);
+        return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
+      })
+      .forEach(f => {
+        if (turf.booleanIntersects(buffered, f)) {
+          select(f.id);
+        }
+      });
   }
-});
 
-// ✅ UX polish
-draw.deleteAll();
-draw.changeMode("simple_select");
+  // ✅ Clean up drawing after selection
+  draw.deleteAll();
+  draw.changeMode("simple_select");
+}
 
+map.on("draw.create", e => {
+  const drawn = e.features[0];
 
-
+  runSelection(drawn);
 });
   
 </script>
