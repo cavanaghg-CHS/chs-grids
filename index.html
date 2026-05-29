@@ -19,61 +19,41 @@
       height: 100%;
     }
 
-/* Row layout */
+/* ----- Layer UI polish ----- */
+.layer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 2px;
+}
+
+.layer-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 2px 0 4px;
+}
+
+/* Switch row layout */
 .switch-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 2px 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
 }
 
-/* Switch container */
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 40px;
-  height: 22px;
+.switch-row:hover {
+  background: rgba(0,0,0,0.05);
 }
 
-/* Hide checkbox */
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+/* Label text */
+.switch-row span {
+  font-size: 12px;
 }
-
-/* Slider */
-.slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: #ccc;
-  transition: 0.2s;
-  border-radius: 20px;
-}
-
-/* Knob */
-.slider:before {
-  content: "";
-  position: absolute;
-  height: 16px;
-  width: 16px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.2s;
-  border-radius: 50%;
-}
-
-/* ON state */
-.switch input:checked + .slider {
-  background-color: #2563eb;
-}
-
-/* Move knob */
-.switch input:checked + .slider:before {
-  transform: translateX(18px);
-}
-``
     
 .selection-panel {
   position: absolute;
@@ -135,12 +115,17 @@
   position: absolute;
   top: 10px;
   left: 10px;
+
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: rgba(255,255,255,0.95);
+  gap: 4px;
+
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+
   padding: 6px;
-  border-radius: 6px;
+  border-radius: 8px;
+
   box-shadow: 0 4px 14px rgba(0,0,0,0.25);
   z-index: 20;
 }
@@ -183,6 +168,68 @@
   background: #ffd700;
 }
 
+.toolbox button {
+  transition: background 0.15s;
+}
+
+.toolbox {
+  min-width: 140px;
+}
+
+/* ----- Divider line between groups ----- */
+.divider {
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+  margin: 6px 0;
+}
+
+/* Switch container */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+/* Hide checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: 0.2s;
+  border-radius: 20px;
+}
+
+/* Knob */
+.slider:before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+/* ON state */
+.switch input:checked + .slider {
+  background-color: #3b82f6;
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(18px);
+}
+    
 /* Remove Mapbox Draw default UI */
 .mapbox-gl-draw_ctrl-draw-btn,
 .mapbox-gl-draw_ctrl-trash {
@@ -205,48 +252,18 @@
   padding-right: 4px;
 }
 
+
 .selection-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-
   padding: 6px 8px;
   margin-bottom: 4px;
-
   background: #f8f9fb;
   border-radius: 6px;
   font-size: 12px;
-
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
 }
-.layer-panel {
-  position: absolute;
-  top: 120px;
-  left: 10px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  background: rgba(255,255,255,0.95);
-  padding: 10px 12px;
-  border-radius: 10px;
-
-  font-size: 13px;
-  font-family: system-ui;
-
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  z-index: 20;
-}
-
-.layer-panel label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-
-
 
     
   </style>
@@ -258,53 +275,57 @@
   
 <div class="toolbox">
 
-<button id="toolSelect" title="Select" class="tool-btn">
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 16 16"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true">
-    <path
-      d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z"
-      fill="#0f172a"/>
-  </svg>
-</button>
+  <!-- Drawing tools -->
+  <button id="toolSelect" title="Select" class="tool-btn">
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <path d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z" fill="#0f172a"/>
+    </svg>
+  </button>
 
   <button id="toolPolygon" title="Polygon">⬠</button>
   <button id="toolLine" title="Line select">／</button>
-  <button id="zoomIn" title="Zoom in">+</button>
-  <button id="zoomOut" title="Zoom out">−</button>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Layer section -->
+  <div class="layer-group">
+    <div class="layer-title">Layers</div>
+
+    <label class="switch-row">
+      <span>Overview</span>
+      <span class="switch">
+        <input type="checkbox" id="toggleOverview" checked>
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="switch-row">
+      <span>Transit</span>
+      <span class="switch">
+        <input type="checkbox" id="toggleTransit">
+        <span class="slider"></span>
+      </span>
+    </label>
+
+    <label class="switch-row">
+      <span>Ports</span>
+      <span class="switch">
+        <input type="checkbox" id="togglePorts">
+        <span class="slider"></span>
+      </span>
+    </label>
+
+  </div>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Zoom -->
+  <button id="zoomIn">+</button>
+  <button id="zoomOut">−</button>
+
 </div>
-
-  <div class="layer-panel">
-
-  <label class="switch-row">
-    <span>Overview</span>
-    <label class="switch">
-      <input type="checkbox" id="toggleOverview" checked>
-      <span class="slider"></span>
-    </label>
-  </label>
-
-  <label class="switch-row">
-    <span>Transit</span>
-    <label class="switch">
-      <input type="checkbox" id="toggleTransit">
-      <span class="slider"></span>
-    </label>
-  </label>
-
-  <label class="switch-row">
-    <span>Ports</span>
-    <label class="switch">
-      <input type="checkbox" id="togglePorts">
-      <span class="slider"></span>
-    </label>
-  </label>
-
-</div>
-
 
 <div class="selection-panel">
   <strong id="panelTitle"></strong>
@@ -623,8 +644,22 @@ map.on("load", () => {
   type: "geojson",
   data: "data/Overview.geojson"
 });
-// ---- TOGGLE: OVERVIEW ----
+
+  function setExclusive(activeId) {
+  ["toggleOverview", "toggleTransit", "togglePorts"].forEach(id => {
+    const el = document.getElementById(id);
+
+    if (id !== activeId) {
+      el.checked = false;
+      el.dispatchEvent(new Event("change"));
+    }
+  });
+}
+
+// OVERVIEW
 document.getElementById("toggleOverview").onchange = e => {
+  setExclusive("toggleOverview");
+
   map.setLayoutProperty(
     "overview-fill",
     "visibility",
@@ -632,20 +667,24 @@ document.getElementById("toggleOverview").onchange = e => {
   );
 };
 
-// ---- TOGGLE: TRANSIT ----
+// TRANSIT
 document.getElementById("toggleTransit").onchange = e => {
-  const visibility = e.target.checked ? "visible" : "none";
+  setExclusive("toggleTransit");
 
-  map.setLayoutProperty("transit-fill", "visibility", visibility);
-  map.setLayoutProperty("transit-outline", "visibility", visibility);
+  const v = e.target.checked ? "visible" : "none";
+
+  map.setLayoutProperty("transit-fill", "visibility", v);
+  map.setLayoutProperty("transit-outline", "visibility", v);
 };
 
-// ---- TOGGLE: PORTS ----
+// PORTS
 document.getElementById("togglePorts").onchange = e => {
-  const visibility = e.target.checked ? "visible" : "none";
+  setExclusive("togglePorts");
 
-  map.setLayoutProperty("ports-fill", "visibility", visibility);
-  map.setLayoutProperty("ports-outline", "visibility", visibility);
+  const v = e.target.checked ? "visible" : "none";
+
+  map.setLayoutProperty("ports-fill", "visibility", v);
+  map.setLayoutProperty("ports-outline", "visibility", v);
 };
 map.addLayer({
   id: "overview-fill",
