@@ -688,31 +688,46 @@ map.on("mouseleave", "ports-fill", () => {
 
 });
 
-map.on("draw.create", e => {
-  const drawn = e.features[0];
+if (drawn.geometry.type === "Polygon") {
 
-  const isValid = f =>
-    f.geometry &&
-    f.geometry.coordinates &&
-    f.geometry.coordinates.length > 0;
+  const drawnBBox = turf.bbox(drawn);
+  const drawnBBoxPoly = turf.bboxPolygon(drawnBBox);
 
-  if (drawn.geometry.type === "Polygon") {
-    cached.filter(isValid).forEach(f => {
-      if (turf.booleanIntersects(drawn, f)) {
-        select(f.id);
-      }
-    });
-  }
+  cached.filter(f => {
+    if (!isValid(f)) return false;
+
+    const fBBox = turf.bbox(f);
+    const fBBoxPoly = turf.bboxPolygon(fBBox);
+
+    return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
+  })
+  .forEach(f => {
+    if (turf.booleanIntersects(drawn, f)) {
+      select(f.id);
+    }
+  });
+}
+
 
   if (drawn.geometry.type === "LineString") {
     const buffered = turf.buffer(drawn, 0.5, { units: "kilometers" });
 
-    cached.filter(isValid).forEach(f => {
-      if (turf.booleanIntersects(buffered, f)) {
-        select(f.id);
-      }
-    });
+    const bufferBBox = turf.bbox(buffered);
+const bufferBBoxPoly = turf.bboxPolygon(bufferBBox);
+
+cached.filter(f => {
+  if (!isValid(f)) return false;
+
+  const fBBox = turf.bbox(f);
+  const fBBoxPoly = turf.bboxPolygon(fBBox);
+
+  return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
+})
+.forEach(f => {
+  if (turf.booleanIntersects(buffered, f)) {
+    select(f.id);
   }
+});
 
 // ✅ UX polish
 draw.deleteAll();
