@@ -18,7 +18,20 @@
       padding: 0;
       height: 100%;
     }
+.layers-panel {
+  position: absolute;
+  top: 140px; /* below toolbox */
+  left: 10px;
 
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+
+  padding: 8px;
+  border-radius: 8px;
+
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  z-index: 20;
+}
 /* ----- Layer UI polish ----- */
 .layer-group {
   display: flex;
@@ -273,32 +286,29 @@
 
 <div id="map"></div>
   
+<!-- TOOLBOX (drawing + zoom only) -->
 <div class="toolbox">
 
-  <!-- Drawing tools -->
-<button id="toolSelect" title="Select" class="tool-btn">
-  <svg width="16" height="16" viewBox="0 0 16 16">
-    <path d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z" fill="#0f172a"/>
-  </svg>
-</button>
+  <button id="toolSelect" title="Select" class="tool-btn">
+    <svg width="16" height="16" viewBox="0 0 16 16">
+      <path d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z" fill="#0f172a"/>
+    </svg>
+  </button>
 
-<button id="toolPolygon" title="Polygon">⬠</button>
-<button id="toolLine" title="Line select">／</button>
+  <button id="toolPolygon" title="Polygon">⬠</button>
+  <button id="toolLine" title="Line select">／</button>
 
-<!-- ✅ NEW divider -->
-<div class="divider"></div>
-
-<!-- ✅ NEW SECTION -->
-<div class="layer-group">
-  <div class="layer-title">Selection</div>
-
-  <button id="toolGrid">⌗</button>
-</div>
-
-  <!-- Divider -->
   <div class="divider"></div>
 
-  <!-- Layer section -->
+  <button id="zoomIn">+</button>
+  <button id="zoomOut">−</button>
+
+</div>
+
+
+<!-- ✅ SEPARATE LAYERS PANEL -->
+<div class="layers-panel">
+
   <div class="layer-group">
     <div class="layer-title">Layers</div>
 
@@ -328,21 +338,6 @@
 
   </div>
 
-  <!-- Divider -->
-  <div class="divider"></div>
-
-  <!-- Zoom -->
-  <button id="zoomIn">+</button>
-  <button id="zoomOut">−</button>
-
-</div>
-
-<div class="selection-panel">
-  <strong id="panelTitle"></strong>
-  <div id="selectionList"></div>
-  <button id="clearBtn" class="action-btn">Clear all</button>
-  <button id="exportCsvBtn" class="action-btn">Export CSV</button>
-  <button id="exportJsonBtn" class="action-btn">Export JSON</button>
 </div>
 
 <!-- ✅ MapLibre JS -->
@@ -568,75 +563,6 @@ zoomOut.onclick = () => map.zoomOut();
 draw.changeMode("simple_select");
 setActive(toolSelect);
 
-
-const selectedDocs = new Set();
-  // ---- Hover popup for document ID ----
-const hoverPopup = new maplibregl.Popup({
-  closeButton: false,
-  closeOnClick: false,
-  offset: 8
-});
-  // ---- UI text (language-dependent) ----
-document.getElementById("panelTitle").textContent = UI.selectedDocuments;
-
-clearBtn.textContent = UI.clearAll;
-exportCsvBtn.textContent = UI.exportCsv;
-exportJsonBtn.textContent = UI.exportJson;
-const listEl = document.getElementById("selectionList");
-
-function updateList() {
-  listEl.innerHTML = "";
-  selectedDocs.forEach(id => {
-    const row = document.createElement("div");
-    row.className = "selection-item";
-    row.innerHTML = `<span>${id}</span><button>✕</button>`;
-    row.querySelector("button").onclick = () => deselect(id);
-    listEl.appendChild(row);
-  });
-}
-
-function select(id) {
-  if (selectedDocs.has(id)) return;
-  selectedDocs.add(id);
-  map.setFeatureState({ source: "ports", id }, { selected: true });
-  updateList();
-}
-
-function deselect(id) {
-  selectedDocs.delete(id);
-  map.setFeatureState({ source: "ports", id }, { selected: false });
-  updateList();
-}
-
-document.getElementById("clearBtn").onclick = () => {
-  selectedDocs.forEach(id =>
-    map.setFeatureState({ source: "ports", id }, { selected: false })
-  );
-  selectedDocs.clear();
-  updateList();
-};
-
-document.getElementById("exportCsvBtn").onclick = () => {
-  const blob = new Blob([Array.from(selectedDocs).join("\n")], { type: "text/csv" });
-  download(blob, "selected_documents.csv");
-};
-
-document.getElementById("exportJsonBtn").onclick = () => {
-  const blob = new Blob(
-    [JSON.stringify(Array.from(selectedDocs), null, 2)],
-    { type: "application/json" }
-  );
-  download(blob, "selected_documents.json");
-};
-
-function download(blob, name) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
 let cached = [];
   let isDrawing = false;
 function isValid(feature) {
@@ -797,7 +723,7 @@ Promise.all([
 
 map.on("click", "ports-fill", e => {
   if (isDrawing) return;
-  select(e.features[0].id);
+// no-op for now
 });
 
 let hoveredId = null;
