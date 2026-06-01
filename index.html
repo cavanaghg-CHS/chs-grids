@@ -495,21 +495,14 @@ map.on("load", () => {
 
     if (id !== activeId) {
       el.checked = false;
-      
-if (map.isStyleLoaded()) {
-  el.dispatchEvent(new Event("change"));
-}
-
+      el.dispatchEvent(new Event("change"));
     }
   });
 }
 
 // OVERVIEW
-
 document.getElementById("toggleOverview").onchange = e => {
   setExclusive("toggleOverview");
-
-  if (!map.getLayer("overview-fill")) return;
 
   map.setLayoutProperty(
     "overview-fill",
@@ -518,13 +511,9 @@ document.getElementById("toggleOverview").onchange = e => {
   );
 };
 
-
 // TRANSIT
-
 document.getElementById("toggleTransit").onchange = e => {
   setExclusive("toggleTransit");
-
-  if (!map.getLayer("transit-fill")) return;
 
   const v = e.target.checked ? "visible" : "none";
 
@@ -532,20 +521,24 @@ document.getElementById("toggleTransit").onchange = e => {
   map.setLayoutProperty("transit-outline", "visibility", v);
 };
 
-
 // PORTS
-
 document.getElementById("togglePorts").onchange = e => {
   setExclusive("togglePorts");
-
-  if (!map.getLayer("ports-fill")) return;
 
   const v = e.target.checked ? "visible" : "none";
 
   map.setLayoutProperty("ports-fill", "visibility", v);
   map.setLayoutProperty("ports-outline", "visibility", v);
 };
-
+map.addLayer({
+  id: "overview-fill",
+  type: "fill",
+  source: "overview",
+  paint: {
+    "fill-color": "#4B9CD3",
+    "fill-opacity": 0.35
+  }
+});
 
   map.addSource("transit", {
   type: "geojson",
