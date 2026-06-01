@@ -12,21 +12,7 @@
   <link rel="stylesheet"
         href="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.css">
 
-  
   <style>
-    
-.dot {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 6px;
-}
-
-.dot.overview { background: #4B9CD3; }
-.dot.transit  { background: #FF5733; }
-.dot.ports    { background: #6B8E7A; }
-
     html, body, #map {
       margin: 0;
       padding: 0;
@@ -34,7 +20,7 @@
     }
 .layers-panel {
   position: absolute;
-  top: 220px;   /* ✅ better spacing below zoom */
+  top: 210px;   /* ✅ better spacing below zoom */
   left: 10px;
   width: 170px; /* ✅ prevents stretching */
 
@@ -48,23 +34,12 @@
   z-index: 20;
 }
 
-
 .switch {
-  width: 34px;
-  height: 18px;
   margin-left: auto;
 }
 
 .switch-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 6px;
-  border-radius: 6px;
-
-  background: rgba(0,0,0,0.03); /* ✅ keep it here */
-
-  transition: background 0.15s;
+  background: rgba(0,0,0,0.03);
 }
   
 /* ----- Layer UI polish ----- */
@@ -85,13 +60,20 @@ font-size: 10px;
   margin: 2px 0 4px;
 }
 
-
-.switch-row span:first-child {
-  flex: 1;
+/* Switch row layout */
+.switch-row {
   display: flex;
   align-items: center;
+  gap: 10px;          /* ✅ consistent spacing */
+  padding: 5px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
 }
 
+
+.switch-row span:first-child {
+  flex: 1;            /* ✅ text takes full space */
+}
 
 .switch-row:hover {
   background: rgba(0,0,0,0.05);
@@ -148,8 +130,8 @@ font-size: 10px;
 
     
 .toolbox button {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   font-size: 14px;
 
   display: flex;
@@ -181,6 +163,14 @@ font-size: 10px;
   margin: 6px 0;
 }
 
+/* Switch container */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
 /* Hide checkbox */
 .switch input {
   opacity: 0;
@@ -202,10 +192,10 @@ font-size: 10px;
 .slider:before {
   content: "";
   position: absolute;
-  height: 12px;
-  width: 12px;
-  bottom: 3px;
+  height: 16px;
+  width: 16px;
   left: 3px;
+  bottom: 3px;
   background: white;
   border-radius: 50%;
   transition: 0.2s;
@@ -262,7 +252,7 @@ font-size: 10px;
     <div class="layer-title">Layers</div>
 
     <label class="switch-row">
-     <span><span class="dot overview"></span>Overview</span>
+      <span>Overview</span>
       <span class="switch">
         <input type="checkbox" id="toggleOverview" checked>
         <span class="slider"></span>
@@ -270,7 +260,7 @@ font-size: 10px;
     </label>
 
     <label class="switch-row">
-      <span><span class="dot transit"></span>Transit</span>
+      <span>Transit</span>
       <span class="switch">
         <input type="checkbox" id="toggleTransit">
         <span class="slider"></span>
@@ -278,7 +268,7 @@ font-size: 10px;
     </label>
 
     <label class="switch-row">
-      <span><span class="dot ports"></span>Ports</span>
+      <span>Ports</span>
       <span class="switch">
         <input type="checkbox" id="togglePorts">
         <span class="slider"></span>
@@ -358,39 +348,56 @@ const map = new maplibregl.Map({
   attributionControl: false
 });
 
-const hoverPopup = new maplibregl.Popup({
-  closeButton: false,
-  closeOnClick: false,
-  offset: 8
-});
-
 const draw = new MapboxDraw({
   displayControlsDefault: false,
   controls: { polygon: true, line_string: true, trash: true },
 
   styles: [
+    /* =========================================
+       ACTIVE POLYGON FILL  (ArcGIS Pro style)
+       ========================================= */
     {
       id: "gl-draw-polygon-fill-active",
       type: "fill",
-      filter: ["all", ["==", "active", "true"], ["==", "$type", "Polygon"]],
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "Polygon"]
+      ],
       paint: {
         "fill-color": "#4EA5FF",
         "fill-opacity": 0.15
       }
     },
+
+    /* =========================================
+       POLYGON OUTLINE
+       ========================================= */
     {
       id: "gl-draw-polygon-stroke-active",
       type: "line",
-      filter: ["all", ["==", "active", "true"], ["==", "$type", "Polygon"]],
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "Polygon"]
+      ],
       paint: {
         "line-color": "#2563EB",
         "line-width": 2
       }
     },
+
+    /* =========================================
+       POLYGON VERTICES
+       ========================================= */
     {
       id: "gl-draw-polygon-and-line-vertex-active",
       type: "circle",
-      filter: ["all", ["==", "active", "true"], ["==", "meta", "vertex"]],
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "meta", "vertex"]
+      ],
       paint: {
         "circle-radius": 4,
         "circle-color": "#FFFFFF",
@@ -398,29 +405,53 @@ const draw = new MapboxDraw({
         "circle-stroke-width": 2
       }
     },
+
+    /* =========================================
+       LINE STRING (ACTIVE)
+       ========================================= */
     {
       id: "gl-draw-line-active",
       type: "line",
-      filter: ["all", ["==", "active", "true"], ["==", "$type", "LineString"]],
+      filter: [
+        "all",
+        ["==", "active", "true"],
+        ["==", "$type", "LineString"]
+      ],
       paint: {
         "line-color": "#2563EB",
         "line-width": 2
       }
     },
+
+    /* =========================================
+       LINE STRING (INACTIVE)
+       ========================================= */
     {
       id: "gl-draw-line-inactive",
       type: "line",
-      filter: ["all", ["==", "active", "false"], ["==", "$type", "LineString"]],
+      filter: [
+        "all",
+        ["==", "active", "false"],
+        ["==", "$type", "LineString"]
+      ],
       paint: {
         "line-color": "#2563EB",
         "line-width": 2,
         "line-opacity": 0.6
       }
     },
+
+    /* =========================================
+       LINE VERTICES
+       ========================================= */
     {
       id: "gl-draw-line-vertex-active",
       type: "circle",
-      filter: ["all", ["==", "meta", "vertex"], ["==", "$type", "Point"]],
+      filter: [
+        "all",
+        ["==", "meta", "vertex"],
+        ["==", "$type", "Point"]
+      ],
       paint: {
         "circle-radius": 4,
         "circle-color": "#FFFFFF",
@@ -714,7 +745,7 @@ function runSelection(drawn) {
       })
       .forEach(f => {
         if (turf.booleanIntersects(drawn, f)) {
-          // selection disabled
+          select(f.id);
         }
       });
   }
@@ -738,7 +769,7 @@ function runSelection(drawn) {
       })
       .forEach(f => {
         if (turf.booleanIntersects(buffered, f)) {
-          // selection disabled
+          select(f.id);
         }
       });
   }
