@@ -301,6 +301,12 @@ font-size: 10px;
 
   </div>
 
+ <div class="divider"></div>
+
+<button id="exportGeoJSON">Export GeoJSON</button>
+<button id="exportCSV">Export CSV</button>
+
+<button id="clearSelection">Clear selection</button> 
 </div>
 
 <!-- ✅ MapLibre JS -->
@@ -544,6 +550,7 @@ let hoveredIds = {
   
 let cached = [];
   let isDrawing = false;
+  let selectedIds = new Set();
 function isValid(feature) {
   return (
     feature &&
@@ -551,6 +558,15 @@ function isValid(feature) {
     feature.geometry.type &&
     feature.geometry.coordinates &&
     feature.geometry.coordinates.length > 0
+  );
+}
+
+function select(id) {
+  selectedIds.add(id);
+
+  map.setFeatureState(
+    { source: "ports", id: id },
+    { selected: true }
   );
 }
 
@@ -897,7 +913,27 @@ updateLayerVisibility("toggleOverview", true);
 updateLayerVisibility("toggleTransit", false);
 updateLayerVisibility("togglePorts", false);
 
-});
+}); // ✅ CLOSE Promise.all HERE ✅
+
+
+// ✅ NOW OUTSIDE Promise, still inside map.load
+document.getElementById("exportGeoJSON").onclick = downloadSelectedGeoJSON;
+
+document.getElementById("exportCSV").onclick = downloadSelectedCSV;
+
+document.getElementById("clearSelection").onclick = () => {
+  selectedIds.forEach(id => {
+    map.setFeatureState(
+      { source: "ports", id },
+      { selected: false }
+    );
+  });
+
+  selectedIds.clear();
+};
+
+}); // ✅ CLOSE map.on("load") HERE
+
 
 
 
@@ -926,7 +962,7 @@ map.on("draw.modechange", e => {
 
 
 
-});
+
 function runSelection(drawn) {
 
   // ✅ Polygon selection
@@ -979,7 +1015,59 @@ function runSelection(drawn) {
   draw.deleteAll();
   draw.changeMode("simple_select");
 }
+function downloadSelectedGeoJSON() {
+  const selected = cached.filter(f => selectedIds.has(f.id));
 
+  if (!selected.length) {
+    alert("No features selected");
+    return;
+  }
+
+  const data = {
+    type: "FeatureCollection",
+    features: selected
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json"
+  });
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "selected_grids.geojson";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+function downloadSelectedCSV() {
+  const selected = cached.filter(f => selectedIds.has(f.id));
+
+  if (!selected.length) {
+    alert("No features selected");
+    return;
+  }
+
+  const headers = Object.keys(selected[0].properties);
+
+  const rows = selected.map(f =>
+    headers.map(h => `"${f.properties[h] || ""}"`).join(",")
+  );
+
+  const csv = [headers.join(","), ...rows].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "selected_grids.csv";
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
 map.on("draw.create", e => {
   const drawn = e.features[0];
 
