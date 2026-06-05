@@ -548,7 +548,9 @@ let hoveredIds = {
 };
   let popupId = null;  
   
-let cached = [];
+let cachedPorts = [];
+let cachedTransit = [];
+let cachedOverview = [];
   let isDrawing = false;
   let selectedIds = new Set();
 function isValid(feature) {
@@ -561,11 +563,15 @@ function isValid(feature) {
   );
 }
 
-function select(id) {
-  selectedIds.add(id);
+function select(feature) {
+  if (!feature || feature.id == null) return;
+
+  const key = feature._layer + "_" + feature.id;
+
+  selectedIds.add(key);
 
   map.setFeatureState(
-    { source: "ports", id: id },
+    { source: feature._layer, id: feature.id },
     { selected: true }
   );
 }
@@ -583,6 +589,20 @@ map.addSource("overview", {
   data: "data/Overview.geojson",
   promoteId: "fid"
 });
+fetch("data/Overview.geojson")
+  .then(r => r.json())
+  .then(data => {
+    cachedOverview = data.features.map((f, i) => {
+      f.id = f.id ?? i;
+      f._layer = "overview";
+      return f;
+    });
+
+    map.getSource("overview").setData({
+      type: "FeatureCollection",
+      features: cachedOverview
+    });
+  });
 
 
 
@@ -625,21 +645,18 @@ function updateLayerVisibility(id, visible) {
 
 // OVERVIEW
 document.getElementById("toggleOverview").onchange = e => {
-  setExclusive("toggleOverview");
   updateLayerVisibility("toggleOverview", e.target.checked);
 };
 
 
 // TRANSIT
 document.getElementById("toggleTransit").onchange = e => {
-  setExclusive("toggleTransit");
   updateLayerVisibility("toggleTransit", e.target.checked);
 };
 
 
 // PORTS
 document.getElementById("togglePorts").onchange = e => {
-  setExclusive("togglePorts");
   updateLayerVisibility("togglePorts", e.target.checked);
 };
 
@@ -652,6 +669,7 @@ map.addLayer({
     "fill-color": "#4B9CD3",
     "fill-opacity": [
   "case",
+  ["boolean", ["feature-state", "selected"], false], 0.8,
   ["boolean", ["feature-state", "hover"], false], 0.6,
   0.35
 ]
@@ -711,7 +729,21 @@ map.addSource("transit", {
   data: "data/Transit.geojson",
   promoteId: "fid"
 });
+  
+fetch("data/Transit.geojson")
+  .then(r => r.json())
+  .then(data => {
+    cachedTransit = data.features.map((f, i) => {
+      f.id = f.id ?? i;
+      f._layer = "transit";
+      return f;
+    });
 
+    map.getSource("transit").setData({
+      type: "FeatureCollection",
+      features: cachedTransit
+    });
+  });
 
 map.addLayer({
   id: "transit-fill",
@@ -786,7 +818,11 @@ map.addLayer({
   source: "transit",
   layout: { visibility: "none" },
   paint: {
-    "line-color": "#8B1E00",
+    "line-color": [
+  "case",
+  ["boolean", ["feature-state", "selected"], false], "#FFD700",
+  "#8B1E00"
+],
     "line-width": 1.5
   }
 });
@@ -849,7 +885,17 @@ Promise.all([
     }
   });
 
-  cached = merged.features;
+cachedPorts = merged.features.map((f, i) => {
+  f.id = f.id ?? i;
+  f._layer = "ports";   // ✅ IMPORTANT
+  return f;
+});
+  
+map.getSource("ports").setData({
+  type: "FeatureCollection",
+  features: cachedPorts
+});
+  
 // ✅ EVENTS MUST BE REGISTERED AFTER LAYER EXISTS
 
 map.on("click", "ports-fill", e => {
@@ -922,14 +968,16 @@ document.getElementById("exportGeoJSON").onclick = downloadSelectedGeoJSON;
 document.getElementById("exportCSV").onclick = downloadSelectedCSV;
 
 document.getElementById("clearSelection").onclick = () => {
-  selectedIds.forEach(id => {
-    map.setFeatureState(
-      { source: "ports", id },
-      { selected: false }
-    );
-  });
+selectedIds.forEach(key => {
+  const [layer, id] = key.split("_");
 
-  selectedIds.clear();
+  map.setFeatureState(
+    { source: layer, id: Number(id) },
+    { selected: false }
+  );
+});
+
+selectedIds.clear();
 };
 
 }); // ✅ CLOSE map.on("load") HERE
@@ -971,20 +1019,26 @@ function runSelection(drawn) {
     const drawnBBox = turf.bbox(drawn);
     const drawnBBoxPoly = turf.bboxPolygon(drawnBBox);
 
-    cached
-      .filter(f => {
-        if (!isValid(f)) return false;
+    const allFeatures = [
+  ...cachedPorts,
+  ...cachedTransit,
+  ...cachedOverview
+];
 
-        const fBBox = turf.bbox(f);
-        const fBBoxPoly = turf.bboxPolygon(fBBox);
+allFeatures
+  .filter(f => {
+    if (!isValid(f)) return false;
 
-        return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
-      })
-      .forEach(f => {
-        if (turf.booleanIntersects(drawn, f)) {
-          select(f.id);
-        }
-      });
+    const fBBox = turf.bbox(f);
+    const fBBoxPoly = turf.bboxPolygon(fBBox);
+
+    return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
+  })
+  .forEach(f => {
+    if (turf.booleanIntersects(drawn, f)) {
+      select(f);
+    }
+  });
   }
 
   // ✅ Line selection
@@ -995,20 +1049,27 @@ function runSelection(drawn) {
     const bufferBBox = turf.bbox(buffered);
     const bufferBBoxPoly = turf.bboxPolygon(bufferBBox);
 
-    cached
-      .filter(f => {
-        if (!isValid(f)) return false;
+    const allFeatures = [
+  ...cachedPorts,
+  ...cachedTransit,
+  ...cachedOverview
+];
 
-        const fBBox = turf.bbox(f);
-        const fBBoxPoly = turf.bboxPolygon(fBBox);
+allFeatures
+  .filter(f => {
+    if (!isValid(f)) return false;
 
-        return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
-      })
-      .forEach(f => {
-        if (turf.booleanIntersects(buffered, f)) {
-          select(f.id);
-        }
-      });
+    const fBBox = turf.bbox(f);
+    const fBBoxPoly = turf.bboxPolygon(fBBox);
+
+    return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
+  })
+  .forEach(f => {
+    if (turf.booleanIntersects(buffered, f)) {
+      select(f);
+    }
+  });
+
   }
 
   // ✅ Clean up drawing after selection
@@ -1016,7 +1077,15 @@ function runSelection(drawn) {
   draw.changeMode("simple_select");
 }
 function downloadSelectedGeoJSON() {
-  const selected = cached.filter(f => selectedIds.has(f.id));
+  const allFeatures = [
+  ...cachedPorts,
+  ...cachedTransit,
+  ...cachedOverview
+];
+
+const selected = allFeatures.filter(f =>
+  selectedIds.has(f._layer + "_" + f.id)
+);
 
   if (!selected.length) {
     alert("No features selected");
@@ -1043,7 +1112,15 @@ function downloadSelectedGeoJSON() {
 }
 
 function downloadSelectedCSV() {
-  const selected = cached.filter(f => selectedIds.has(f.id));
+  const allFeatures = [
+  ...cachedPorts,
+  ...cachedTransit,
+  ...cachedOverview
+];
+
+const selected = allFeatures.filter(f =>
+  selectedIds.has(f._layer + "_" + f.id)
+);
 
   if (!selected.length) {
     alert("No features selected");
