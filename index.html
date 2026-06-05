@@ -494,17 +494,6 @@ hoverPopup
   .addTo(map);
 });
 
-map.on("mouseleave", "overview-fill", () => {
-
-  if (hoveredIds.overview !== null) {
-    try {
-      map.setFeatureState(
-        { source: "overview", id: hoveredIds.overview },
-        { hover: false }
-      );
-    } catch (e) {}
-  }
-
   hoveredIds.overview = null;
   map.getCanvas().style.cursor = "";
   hoverPopup.remove();
@@ -679,27 +668,36 @@ map.moveLayer("ports-fill");
 map.moveLayer("ports-outline");
  
 
-map.on("mousemove", "ports-fill", e => {
+map.on("mousemove", e => {
+  if (map.getLayoutProperty("ports-fill", "visibility") !== "visible") return;
+  const features = map.queryRenderedFeatures(e.point, {
+    layers: ["ports-fill"]
+  });
 
-if (!e.features || !e.features.length) return;
+  if (!features.length) {
+    // reset hover when leaving ports
+    if (hoveredIds.ports !== null) {
+      map.setFeatureState(
+        { source: "ports", id: hoveredIds.ports },
+        { hover: false }
+      );
+      hoveredIds.ports = null;
+      hoverPopup.remove();
+      map.getCanvas().style.cursor = "";
+    }
+    return;
+  }
 
-const feature = e.features[0];
-if (feature.id == null) return;
+  const feature = features[0];
+  const id = feature.id;
+  if (id == null) return;
 
-const id = feature.id;
-
-if (
-  hoveredIds.ports !== null &&
-  hoveredIds.ports !== id
-) {
-
-  try {
+  if (hoveredIds.ports !== null && hoveredIds.ports !== id) {
     map.setFeatureState(
       { source: "ports", id: hoveredIds.ports },
       { hover: false }
     );
-  } catch (e) {}
-}
+  }
 
   hoveredIds.ports = id;
 
@@ -712,35 +710,18 @@ if (
 
   const props = feature.properties;
 
-hoverPopup
-  .setLngLat(e.lngLat)
-  .setHTML(`
-    <div style="font-weight:600; font-size:12px; margin-bottom:4px;">
-      Port
-    </div>
-    <div>
-      <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
-      <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
-    </div>
-  `)
-  .addTo(map);
-
-});
-
-map.on("mouseleave", "ports-fill", () => {
-
-  if (hoveredIds.ports !== null) {
-    try {
-      map.setFeatureState(
-        { source: "ports", id: hoveredIds.ports },
-        { hover: false }
-      );
-    } catch (e) {}
-  }
-
-  hoveredIds.ports = null;
-  map.getCanvas().style.cursor = "";
-  hoverPopup.remove();
+  hoverPopup
+    .setLngLat(e.lngLat)
+    .setHTML(`
+      <div style="font-weight:600; font-size:12px; margin-bottom:4px;">
+        Port
+      </div>
+      <div>
+        <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
+        <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
+      </div>
+    `)
+    .addTo(map);
 });
   
 updateLayerVisibility("toggleOverview", true);
