@@ -249,7 +249,7 @@ font-size: 10px;
 <div class="layers-panel">
 
   <div class="layer-group">
-    <div class="layer-title">Layers</div>
+    <div class="layer-title" id="layerTitle">Layers</div>
 
     <label class="switch-row">
       <span>Overview</span>
@@ -268,7 +268,7 @@ font-size: 10px;
     </label>
 
     <label class="switch-row">
-      <span>Ports</span>
+      <span>Port</span>
       <span class="switch">
         <input type="checkbox" id="togglePorts">
         <span class="slider"></span>
@@ -302,6 +302,10 @@ const UI = isFrench
       clearAll: "Tout effacer",
       exportCsv: "Exporter CSV",
       exportJson: "Exporter JSON",
+
+    
+document.getElementById("layerTitle").textContent =
+  isFrench ? "Couches" : "Layers";
 
       // Toolbar tooltips
       select: "Sélectionner",
