@@ -399,17 +399,6 @@ let transitReady = false;
 let portsReady = false;
 let overviewReady = false;
 
-function isValid(feature) {
-  return (
-    feature &&
-    feature.geometry &&
-    feature.geometry.type &&
-    feature.geometry.coordinates &&
-    feature.geometry.coordinates.length > 0
-  );
-}
-
-
 map.on("load", () => {
 
   // ✅ Fix label safely here
@@ -494,18 +483,17 @@ function updateLayerVisibility(id, visible) {
 
 // OVERVIEW
 document.getElementById("toggleOverview").onchange = e => {
+  setExclusive("toggleOverview");   // ✅ ADD THIS
   updateLayerVisibility("toggleOverview", e.target.checked);
 };
 
-
-// TRANSIT
 document.getElementById("toggleTransit").onchange = e => {
+  setExclusive("toggleTransit");   // ✅ ADD THIS
   updateLayerVisibility("toggleTransit", e.target.checked);
 };
 
-
-// PORTS
 document.getElementById("togglePorts").onchange = e => {
+  setExclusive("togglePorts");     // ✅ ADD THIS
   updateLayerVisibility("togglePorts", e.target.checked);
 };
 
@@ -645,9 +633,8 @@ const id = feature.id;
 
   if (
   hoveredIds.transit !== null &&
-  hoveredIds.transit !== id &&
-  map.getSource("transit")
-) {
+  hoveredIds.transit !== id
+){
   try {
     map.setFeatureState(
       { source: "transit", id: hoveredIds.transit },
@@ -844,7 +831,6 @@ hoverPopup
   `)
   .addTo(map);
 
-  popupId = id;
 });
 
 map.on("mouseleave", "ports-fill", () => {
@@ -863,7 +849,6 @@ map.on("mouseleave", "ports-fill", () => {
   hoveredIds.ports = null;
   map.getCanvas().style.cursor = "";
   hoverPopup.remove();
-  popupId = null;
 });
   
 updateLayerVisibility("toggleOverview", true);
