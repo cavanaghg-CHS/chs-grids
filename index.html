@@ -610,9 +610,15 @@ fetch("data/Overview.geojson")
       type: "FeatureCollection",
       features: cachedOverview
     });
-map.once("idle", () => {
-  overviewReady = true;
-});
+const checkOverviewReady = () => {
+  if (map.isSourceLoaded("overview")) {
+    overviewReady = true;
+  } else {
+    requestAnimationFrame(checkOverviewReady);
+  }
+};
+
+checkOverviewReady();
     
   });
 
@@ -721,7 +727,7 @@ const id = feature.id;
 
   map.getCanvas().style.cursor = "pointer";
 
-  const props = e.features[0].properties;
+  const props = feature.properties;
 
 hoverPopup
   .setLngLat(e.lngLat)
@@ -738,13 +744,19 @@ hoverPopup
 });
 
 map.on("mouseleave", "overview-fill", () => {
-  
-if (hoveredIds.overview !== null) {
-  map.setFeatureState({ source: "overview", id: hoveredIds.overview }, { hover: false });
-}
 
-hoveredIds.overview = null;
+  if (!overviewReady) return;
 
+  if (hoveredIds.overview !== null) {
+    try {
+      map.setFeatureState(
+        { source: "overview", id: hoveredIds.overview },
+        { hover: false }
+      );
+    } catch (e) {}
+  }
+
+  hoveredIds.overview = null;
   map.getCanvas().style.cursor = "";
   hoverPopup.remove();
 });
@@ -765,16 +777,19 @@ fetch("data/Transit.geojson")
   });
 
   map.getSource("transit").setData({
-    type: "FeatureCollection",
-    features: cachedTransit
-  });
-   map.once("idle", () => {
-  transitReady = true;
+  type: "FeatureCollection",
+  features: cachedTransit
 });
 
-  map.once("idle", () => {
+const checkTransitReady = () => {
+  if (map.isSourceLoaded("transit")) {
     transitReady = true;
-  });
+  } else {
+    requestAnimationFrame(checkTransitReady);
+  }
+};
+
+checkTransitReady();
 });
 
 
@@ -804,12 +819,18 @@ if (feature.id == null) return;
 const id = feature.id;
 
 
-  if (hoveredIds.transit !== null && hoveredIds.transit !== id) {
+  if (
+  hoveredIds.transit !== null &&
+  hoveredIds.transit !== id &&
+  map.getSource("transit")
+) {
+  try {
     map.setFeatureState(
       { source: "transit", id: hoveredIds.transit },
       { hover: false }
     );
-  }
+  } catch (e) {}
+}
 
   hoveredIds.transit = id;
 
@@ -820,7 +841,7 @@ const id = feature.id;
 
   map.getCanvas().style.cursor = "pointer";
 
-  const props = e.features[0].properties;
+  const props = feature.properties;
 
   hoverPopup
   .setLngLat(e.lngLat)
@@ -839,11 +860,16 @@ const id = feature.id;
 
   
   map.on("mouseleave", "transit-fill", () => {
+
+  if (!transitReady) return;
+
   if (hoveredIds.transit !== null) {
-    map.setFeatureState(
-      { source: "transit", id: hoveredIds.transit },
-      { hover: false }
-    );
+    try {
+      map.setFeatureState(
+        { source: "transit", id: hoveredIds.transit },
+        { hover: false }
+      );
+    } catch (e) {}
   }
 
   hoveredIds.transit = null;
@@ -938,9 +964,15 @@ map.getSource("ports").setData({
 });
 
   
-map.once("idle", () => {
-  portsReady = true;
-});
+const checkPortsReady = () => {
+  if (map.isSourceLoaded("ports")) {
+    portsReady = true;
+  } else {
+    requestAnimationFrame(checkPortsReady);
+  }
+};
+
+checkPortsReady();
 
   
 // ✅ EVENTS MUST BE REGISTERED AFTER LAYER EXISTS
@@ -960,12 +992,18 @@ if (feature.id == null) return;
 const id = feature.id;
 
 
-  if (hoveredIds.ports !== null && hoveredIds.ports !== id) {
+  if (
+  hoveredIds.ports !== null &&
+  hoveredIds.ports !== id &&
+  map.getSource("ports")
+) {
+  try {
     map.setFeatureState(
       { source: "ports", id: hoveredIds.ports },
       { hover: false }
     );
-  }
+  } catch (e) {}
+}
 
   hoveredIds.ports = id;
 
@@ -976,7 +1014,7 @@ const id = feature.id;
 
   map.getCanvas().style.cursor = "pointer";
 
-  const props = e.features[0].properties;
+  const props = feature.properties;
 
 hoverPopup
   .setLngLat(e.lngLat)
@@ -995,11 +1033,16 @@ hoverPopup
 });
 
 map.on("mouseleave", "ports-fill", () => {
+
+  if (!portsReady) return;
+
   if (hoveredIds.ports !== null) {
-    map.setFeatureState(
-      { source: "ports", id: hoveredIds.ports },
-      { hover: false }
-    );
+    try {
+      map.setFeatureState(
+        { source: "ports", id: hoveredIds.ports },
+        { hover: false }
+      );
+    } catch (e) {}
   }
 
   hoveredIds.ports = null;
@@ -1039,26 +1082,38 @@ selectedIds.clear();
 
 
 map.on("draw.modechange", e => {
+
   isDrawing = e.mode !== "simple_select";
 
-  // ✅ Sync toolbar state to mode
+  // ✅ Sync toolbar state
   if (e.mode === "simple_select") setActive(toolSelect);
   if (e.mode === "draw_polygon") setActive(toolPolygon);
   if (e.mode === "draw_line_string") setActive(toolLine);
 
-  // ✅ Clear hover immediately when drawing starts
-  if (isDrawing) {
-  if (hoveredIds.ports !== null) {
-    map.setFeatureState(
-      { source: "ports", id: hoveredIds.ports },
-      { hover: false }
-    );
-  }
+  // ✅ Safe helper to clear hover
+  const clearHover = (source, id, ready) => {
+    if (id !== null && ready) {
+      try {
+        map.setFeatureState(
+          { source, id },
+          { hover: false }
+        );
+      } catch (e) {}
+    }
+  };
 
-  hoveredIds.ports = null;
-  hoverPopup.remove();
-  map.getCanvas().style.cursor = "";
-}
+  if (isDrawing) {
+    clearHover("ports", hoveredIds.ports, portsReady);
+    clearHover("transit", hoveredIds.transit, transitReady);
+    clearHover("overview", hoveredIds.overview, overviewReady);
+
+    hoveredIds.ports = null;
+    hoveredIds.transit = null;
+    hoveredIds.overview = null;
+
+    hoverPopup.remove();
+    map.getCanvas().style.cursor = "";
+  }
 });
 
 
