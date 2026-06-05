@@ -494,11 +494,19 @@ hoverPopup
   .addTo(map);
 });
 
+map.on("mouseleave", "overview-fill", () => {
+  if (hoveredIds.overview !== null) {
+    map.setFeatureState(
+      { source: "overview", id: hoveredIds.overview },
+      { hover: false }
+    );
+  }
+
   hoveredIds.overview = null;
   map.getCanvas().style.cursor = "";
   hoverPopup.remove();
 });
-
+  
 map.addSource("transit", {
   type: "geojson",
   data: "data/Transit.geojson",
@@ -669,6 +677,7 @@ map.moveLayer("ports-outline");
  
 
 map.on("mousemove", e => {
+  if (!map.getLayer("ports-fill")) return;
   if (map.getLayoutProperty("ports-fill", "visibility") !== "visible") return;
   const features = map.queryRenderedFeatures(e.point, {
     layers: ["ports-fill"]
