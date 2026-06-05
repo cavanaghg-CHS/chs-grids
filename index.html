@@ -329,30 +329,6 @@ const UI = isFrench
       date: "Date"
     };
 
-  
-document.getElementById("layerTitle").textContent =
-  isFrench ? "Couches" : "Layers";
-
-  
-  : {
-      // Panel
-      selectedDocuments: "Selected Documents",
-      clearAll: "Clear all",
-      exportCsv: "Export CSV",
-      exportJson: "Export JSON",
-
-      // Toolbar tooltips
-      select: "Select",
-      polygon: "Polygon select",
-      line: "Line select",
-      delete: "Delete geometry",
-      zoomIn: "Zoom in",
-      zoomOut: "Zoom out",
-
-      // Popup labels
-      documentId: "Document ID",
-      date: "Date"
-    };
 
 const STYLE_EN =
   "https://www.arcgis.com/sharing/rest/content/items/800d755712e8415aab301b9d55bc2800/resources/styles/root.json";
@@ -533,11 +509,18 @@ function isValid(feature) {
   );
 }
 
+
 map.on("load", () => {
+
+  // ✅ Fix label safely here
+  document.getElementById("layerTitle").textContent =
+    isFrench ? "Couches" : "Layers";
+
   map.addSource("overview", {
-  type: "geojson",
-  data: "data/Overview.geojson"
-});
+    type: "geojson",
+    data: "data/Overview.geojson"
+  });
+
 
 let isUpdating = false;
 
