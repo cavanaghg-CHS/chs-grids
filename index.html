@@ -7,9 +7,6 @@
   <!-- MapLibre CSS -->
   <link rel="stylesheet"
         href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
-
-
-  
   <style>
     html, body, #map {
       margin: 0;
@@ -346,20 +343,14 @@ let hoveredIds = {
   ports: null
 };
   
-let cachedPorts = [];
-let cachedTransit = [];
-let cachedOverview = [];
-  
-let transitReady = false;
-let portsReady = false;
-let overviewReady = false;
 
-map.addControl(
-  new maplibregl.NavigationControl({ showCompass: false }),
-  "top-left"
-);
-  
 map.on("load", () => {
+
+  map.addControl(
+    new maplibregl.NavigationControl({ showCompass: false }),
+    "top-left"
+  );
+
 
   // ✅ Fix label safely here
   document.getElementById("layerTitle").textContent =
@@ -371,32 +362,6 @@ map.addSource("overview", {
   data: "data/Overview.geojson",
   promoteId: "fid"
 });
-fetch("data/Overview.geojson")
-  .then(r => r.json())
-  .then(data => {
-    cachedOverview = data.features.map((f, i) => {
-      f.id = f.id ?? i;
-      f._layer = "overview";
-      return f;
-    });
-
-    map.getSource("overview").setData({
-      type: "FeatureCollection",
-      features: cachedOverview
-    });
-const checkOverviewReady = () => {
-  if (map.isSourceLoaded("overview")) {
-    overviewReady = true;
-  } else {
-    requestAnimationFrame(checkOverviewReady);
-  }
-};
-
-checkOverviewReady();
-    
-  });
-
-
 
 let isUpdating = false;
 
@@ -441,19 +406,24 @@ function updateLayerVisibility(id, visible) {
   }
 }
 
-// OVERVIEW
 document.getElementById("toggleOverview").onchange = e => {
-  setExclusive("toggleOverview");   // ✅ ADD THIS
+  if (e.target.checked) {
+    setExclusive("toggleOverview");
+  }
   updateLayerVisibility("toggleOverview", e.target.checked);
 };
 
 document.getElementById("toggleTransit").onchange = e => {
-  setExclusive("toggleTransit");   // ✅ ADD THIS
+  if (e.target.checked) {
+    setExclusive("toggleTransit");
+  }
   updateLayerVisibility("toggleTransit", e.target.checked);
 };
 
 document.getElementById("togglePorts").onchange = e => {
-  setExclusive("togglePorts");     // ✅ ADD THIS
+  if (e.target.checked) {
+    setExclusive("togglePorts");
+  }
   updateLayerVisibility("togglePorts", e.target.checked);
 };
 
@@ -473,7 +443,6 @@ map.addLayer({
 });
 map.on("mousemove", "overview-fill", e => {
 
-if (!overviewReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -482,6 +451,7 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
+  if (hoveredIds.overview === id) return;
 
   if (hoveredIds.overview !== null && hoveredIds.overview !== id) {
     map.setFeatureState(
@@ -517,8 +487,6 @@ hoverPopup
 
 map.on("mouseleave", "overview-fill", () => {
 
-  if (!overviewReady) return;
-
   if (hoveredIds.overview !== null) {
     try {
       map.setFeatureState(
@@ -538,32 +506,6 @@ map.addSource("transit", {
   data: "data/Transit.geojson",
   promoteId: "fid"
 });
-  
-fetch("data/Transit.geojson")
-  .then(r => r.json())
- .then(data => {
-  cachedTransit = data.features.map((f, i) => {
-    f.id = f.id ?? i;
-    f._layer = "transit";
-    return f;
-  });
-
-  map.getSource("transit").setData({
-  type: "FeatureCollection",
-  features: cachedTransit
-});
-
-const checkTransitReady = () => {
-  if (map.isSourceLoaded("transit")) {
-    transitReady = true;
-  } else {
-    requestAnimationFrame(checkTransitReady);
-  }
-};
-
-checkTransitReady();
-});
-
 
 map.addLayer({
   id: "transit-fill",
@@ -581,7 +523,6 @@ map.addLayer({
 });
 
  map.on("mousemove", "transit-fill", e => {
- if (!transitReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -590,7 +531,8 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
-
+if (hoveredIds.transit === id) return;
+   
   if (
   hoveredIds.transit !== null &&
   hoveredIds.transit !== id
@@ -632,8 +574,6 @@ const id = feature.id;
   
   map.on("mouseleave", "transit-fill", () => {
 
-  if (!transitReady) return;
-
   if (hoveredIds.transit !== null) {
     try {
       map.setFeatureState(
@@ -672,16 +612,20 @@ Promise.all([
   fetch("data/Port_9.geojson").then(r => r.json())
 ]).then(files => {
   const merged = {
-    type: "FeatureCollection",
-    features: files.flatMap(f => f.features)
-  };
+  type: "FeatureCollection",
+  features: files.flatMap((f, i1) =>
+    f.features.map((feat, i2) => {
+      feat.id = feat.id ?? `${i1}-${i2}`;
+      return feat;
+    })
+  )
+};
 
 
 
   map.addSource("ports", {
     type: "geojson",
     data: merged,
-  promoteId: "fid"
   });
 
   map.addLayer({
@@ -718,33 +662,7 @@ Promise.all([
     }
   });
 
-cachedPorts = merged.features.map((f, i) => {
-  f.id = f.id ?? i;
-  f._layer = "ports";   // ✅ IMPORTANT
-  return f;
-});
-  
-map.getSource("ports").setData({
-  type: "FeatureCollection",
-  features: cachedPorts
-});
-
-  
-const checkPortsReady = () => {
-  if (map.isSourceLoaded("ports")) {
-    portsReady = true;
-  } else {
-    requestAnimationFrame(checkPortsReady);
-  }
-};
-
-checkPortsReady();
-
-  
-// ✅ EVENTS MUST BE REGISTERED AFTER LAYER EXISTS
-
 map.on("mousemove", "ports-fill", e => {
-if (!portsReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -753,6 +671,7 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
+  if (hoveredIds.ports === id) return;
 
 if (
   hoveredIds.ports !== null &&
@@ -794,8 +713,6 @@ hoverPopup
 });
 
 map.on("mouseleave", "ports-fill", () => {
-
-  if (!portsReady) return;
 
   if (hoveredIds.ports !== null) {
     try {
