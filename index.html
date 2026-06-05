@@ -8,9 +8,6 @@
   <link rel="stylesheet"
         href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
 
-  <!-- Mapbox Draw CSS -->
-  <link rel="stylesheet"
-        href="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.css">
 
   
   <style>
@@ -211,11 +208,6 @@ font-size: 10px;
   transform: translateX(18px);
 }
     
-/* Remove Mapbox Draw default UI */
-.mapbox-gl-draw_ctrl-draw-btn,
-.mapbox-gl-draw_ctrl-trash {
-  display: none !important;
-}
 
 /* ✅ Professional hover popup */
 .maplibregl-popup.hover-popup .maplibregl-popup-content {
@@ -304,25 +296,11 @@ font-size: 10px;
 
  <div class="divider"></div>
 
-<button id="exportGeoJSON">Export GeoJSON</button>
-<button id="exportCSV">Export CSV</button>
-
-<button id="clearSelection">Clear selection</button> 
 </div>
 
 <!-- ✅ MapLibre JS -->
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
-<!-- ✅ REQUIRED alias for Mapbox Draw -->
-<script>
-  window.mapboxgl = maplibregl;
-</script>
-
-<!-- ✅ Mapbox Draw JS -->
-<script src="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.js"></script>
-
-<!-- ✅ Turf JS (FIXED) -->
-<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
 <script>
 const isFrench = navigator.language?.toLowerCase().startsWith("fr");
@@ -387,146 +365,12 @@ const hoverPopup = new maplibregl.Popup({
   className: "hover-popup"
 });
 
-  
-const draw = new MapboxDraw({
-  displayControlsDefault: false,
-  controls: { polygon: true, line_string: true, trash: true },
-
-  styles: [
-    /* =========================================
-       ACTIVE POLYGON FILL  (ArcGIS Pro style)
-       ========================================= */
-    {
-      id: "gl-draw-polygon-fill-active",
-      type: "fill",
-      filter: [
-        "all",
-        ["==", "active", "true"],
-        ["==", "$type", "Polygon"]
-      ],
-      paint: {
-        "fill-color": "#4EA5FF",
-        "fill-opacity": 0.15
-      }
-    },
-
-    /* =========================================
-       POLYGON OUTLINE
-       ========================================= */
-    {
-      id: "gl-draw-polygon-stroke-active",
-      type: "line",
-      filter: [
-        "all",
-        ["==", "active", "true"],
-        ["==", "$type", "Polygon"]
-      ],
-      paint: {
-        "line-color": "#2563EB",
-        "line-width": 2
-      }
-    },
-
-    /* =========================================
-       POLYGON VERTICES
-       ========================================= */
-    {
-      id: "gl-draw-polygon-and-line-vertex-active",
-      type: "circle",
-      filter: [
-        "all",
-        ["==", "active", "true"],
-        ["==", "meta", "vertex"]
-      ],
-      paint: {
-        "circle-radius": 4,
-        "circle-color": "#FFFFFF",
-        "circle-stroke-color": "#2563EB",
-        "circle-stroke-width": 2
-      }
-    },
-
-    /* =========================================
-       LINE STRING (ACTIVE)
-       ========================================= */
-    {
-      id: "gl-draw-line-active",
-      type: "line",
-      filter: [
-        "all",
-        ["==", "active", "true"],
-        ["==", "$type", "LineString"]
-      ],
-      paint: {
-        "line-color": "#2563EB",
-        "line-width": 2
-      }
-    },
-
-    /* =========================================
-       LINE STRING (INACTIVE)
-       ========================================= */
-    {
-      id: "gl-draw-line-inactive",
-      type: "line",
-      filter: [
-        "all",
-        ["==", "active", "false"],
-        ["==", "$type", "LineString"]
-      ],
-      paint: {
-        "line-color": "#2563EB",
-        "line-width": 2,
-        "line-opacity": 0.6
-      }
-    },
-
-    /* =========================================
-       LINE VERTICES
-       ========================================= */
-    {
-      id: "gl-draw-line-vertex-active",
-      type: "circle",
-      filter: [
-        "all",
-        ["==", "meta", "vertex"],
-        ["==", "$type", "Point"]
-      ],
-      paint: {
-        "circle-radius": 4,
-        "circle-color": "#FFFFFF",
-        "circle-stroke-color": "#2563EB",
-        "circle-stroke-width": 2
-      }
-    }
-  ]
-});
-
-
-
-  
-map.addControl(draw, "top-left");
-  
 function setActive(btn) {
   document.querySelectorAll(".toolbox button")
     .forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
 }
 
-toolSelect.onclick = e => {
-  draw.changeMode("simple_select");
-  setActive(e.target);
-};
-
-toolPolygon.onclick = e => {
-  draw.changeMode("draw_polygon");
-  setActive(e.target);
-};
-
-toolLine.onclick = e => {
-  draw.changeMode("draw_line_string");
-  setActive(e.target);
-};
 // ---- Toolbar tooltips (language-dependent) ----
 toolSelect.title = UI.select;
 toolPolygon.title = UI.polygon;
@@ -539,7 +383,6 @@ zoomIn.onclick = () => map.zoomIn();
 zoomOut.onclick = () => map.zoomOut();
 
 // Default mode
-draw.changeMode("simple_select");
 setActive(toolSelect);
 
 let hoveredIds = {
@@ -547,13 +390,10 @@ let hoveredIds = {
   transit: null,
   ports: null
 };
-  let popupId = null;  
   
 let cachedPorts = [];
 let cachedTransit = [];
 let cachedOverview = [];
-  let isDrawing = false;
-  let selectedIds = new Set();
   
 let transitReady = false;
 let portsReady = false;
@@ -566,21 +406,6 @@ function isValid(feature) {
     feature.geometry.type &&
     feature.geometry.coordinates &&
     feature.geometry.coordinates.length > 0
-  );
-}
-
-  
-  
-function select(feature) {
-  if (!feature || feature.id == null) return;
-
-  const key = feature._layer + "_" + feature.id;
-
-  selectedIds.add(key);
-
-  map.setFeatureState(
-    { source: feature._layer, id: feature.id },
-    { selected: true }
   );
 }
 
@@ -693,7 +518,6 @@ map.addLayer({
     "fill-color": "#4B9CD3",
     "fill-opacity": [
   "case",
-  ["boolean", ["feature-state", "selected"], false], 0.8,
   ["boolean", ["feature-state", "hover"], false], 0.6,
   0.35
 ]
@@ -701,7 +525,7 @@ map.addLayer({
 });
 map.on("mousemove", "overview-fill", e => {
 
-if (isDrawing || !overviewReady) return;
+if (!overviewReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -809,7 +633,7 @@ map.addLayer({
 });
 
  map.on("mousemove", "transit-fill", e => {
- if (isDrawing || !transitReady) return;
+ if (!transitReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -882,14 +706,10 @@ map.addLayer({
   type: "line",
   source: "transit",
   layout: { visibility: "none" },
-  paint: {
-    "line-color": [
-  "case",
-  ["boolean", ["feature-state", "selected"], false], "#FFD700",
-  "#8B1E00"
-],
-    "line-width": 1.5
-  }
+ paint: {
+  "line-color": "#8B1E00",
+  "line-width": 1.5
+}
 });
 
 Promise.all([
@@ -939,11 +759,10 @@ Promise.all([
     layout: { visibility: "none" },
     paint: {
       "line-color": [
-        "case",
-        ["boolean", ["feature-state", "selected"], false], "#FFD700",
-        ["boolean", ["feature-state", "hover"], false], "#2563EB",
-        "#004d00"
-      ],
+  "case",
+  ["boolean", ["feature-state", "hover"], false], "#2563EB",
+  "#004d00"
+],
       "line-width": [
         "case",
         ["boolean", ["feature-state", "hover"], false], 3,
@@ -977,12 +796,8 @@ checkPortsReady();
   
 // ✅ EVENTS MUST BE REGISTERED AFTER LAYER EXISTS
 
-map.on("click", "ports-fill", e => {
-  if (isDrawing) return;
-});
-
 map.on("mousemove", "ports-fill", e => {
-if (isDrawing || !portsReady) return;
+if (!portsReady) return;
 
 if (!e.features || !e.features.length) return;
 
@@ -992,11 +807,11 @@ if (feature.id == null) return;
 const id = feature.id;
 
 
-  if (
+if (
   hoveredIds.ports !== null &&
-  hoveredIds.ports !== id &&
-  map.getSource("ports")
+  hoveredIds.ports !== id
 ) {
+
   try {
     map.setFeatureState(
       { source: "ports", id: hoveredIds.ports },
@@ -1057,207 +872,7 @@ updateLayerVisibility("togglePorts", false);
 
 }); // ✅ CLOSE Promise.all HERE ✅
 
-
-// ✅ NOW OUTSIDE Promise, still inside map.load
-document.getElementById("exportGeoJSON").onclick = downloadSelectedGeoJSON;
-
-document.getElementById("exportCSV").onclick = downloadSelectedCSV;
-
-document.getElementById("clearSelection").onclick = () => {
-selectedIds.forEach(key => {
-  const [layer, id] = key.split("_");
-
-  map.setFeatureState(
-    { source: layer, id: Number(id) },
-    { selected: false }
-  );
-});
-
-selectedIds.clear();
-};
-
 }); // ✅ CLOSE map.on("load") HERE
-
-
-
-
-map.on("draw.modechange", e => {
-
-  isDrawing = e.mode !== "simple_select";
-
-  // ✅ Sync toolbar state
-  if (e.mode === "simple_select") setActive(toolSelect);
-  if (e.mode === "draw_polygon") setActive(toolPolygon);
-  if (e.mode === "draw_line_string") setActive(toolLine);
-
-  // ✅ Safe helper to clear hover
-  const clearHover = (source, id, ready) => {
-    if (id !== null && ready) {
-      try {
-        map.setFeatureState(
-          { source, id },
-          { hover: false }
-        );
-      } catch (e) {}
-    }
-  };
-
-  if (isDrawing) {
-    clearHover("ports", hoveredIds.ports, portsReady);
-    clearHover("transit", hoveredIds.transit, transitReady);
-    clearHover("overview", hoveredIds.overview, overviewReady);
-
-    hoveredIds.ports = null;
-    hoveredIds.transit = null;
-    hoveredIds.overview = null;
-
-    hoverPopup.remove();
-    map.getCanvas().style.cursor = "";
-  }
-});
-
-
-
-
-function runSelection(drawn) {
-
-  // ✅ Polygon selection
-  if (drawn.geometry.type === "Polygon") {
-
-    const drawnBBox = turf.bbox(drawn);
-    const drawnBBoxPoly = turf.bboxPolygon(drawnBBox);
-
-    const allFeatures = [
-  ...cachedPorts,
-  ...cachedTransit,
-  ...cachedOverview
-];
-
-allFeatures
-  .filter(f => {
-    if (!isValid(f)) return false;
-
-    const fBBox = turf.bbox(f);
-    const fBBoxPoly = turf.bboxPolygon(fBBox);
-
-    return turf.booleanIntersects(drawnBBoxPoly, fBBoxPoly);
-  })
-  .forEach(f => {
-    if (turf.booleanIntersects(drawn, f)) {
-      select(f);
-    }
-  });
-  }
-
-  // ✅ Line selection
-  if (drawn.geometry.type === "LineString") {
-
-    const buffered = turf.buffer(drawn, 0.5, { units: "kilometers" });
-
-    const bufferBBox = turf.bbox(buffered);
-    const bufferBBoxPoly = turf.bboxPolygon(bufferBBox);
-
-    const allFeatures = [
-  ...cachedPorts,
-  ...cachedTransit,
-  ...cachedOverview
-];
-
-allFeatures
-  .filter(f => {
-    if (!isValid(f)) return false;
-
-    const fBBox = turf.bbox(f);
-    const fBBoxPoly = turf.bboxPolygon(fBBox);
-
-    return turf.booleanIntersects(bufferBBoxPoly, fBBoxPoly);
-  })
-  .forEach(f => {
-    if (turf.booleanIntersects(buffered, f)) {
-      select(f);
-    }
-  });
-
-  }
-
-  // ✅ Clean up drawing after selection
-  draw.deleteAll();
-  draw.changeMode("simple_select");
-}
-function downloadSelectedGeoJSON() {
-  const allFeatures = [
-  ...cachedPorts,
-  ...cachedTransit,
-  ...cachedOverview
-];
-
-const selected = allFeatures.filter(f =>
-  selectedIds.has(f._layer + "_" + f.id)
-);
-
-  if (!selected.length) {
-    alert("No features selected");
-    return;
-  }
-
-  const data = {
-    type: "FeatureCollection",
-    features: selected
-  };
-
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json"
-  });
-
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "selected_grids.geojson";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function downloadSelectedCSV() {
-  const allFeatures = [
-  ...cachedPorts,
-  ...cachedTransit,
-  ...cachedOverview
-];
-
-const selected = allFeatures.filter(f =>
-  selectedIds.has(f._layer + "_" + f.id)
-);
-
-  if (!selected.length) {
-    alert("No features selected");
-    return;
-  }
-
-  const headers = Object.keys(selected[0].properties);
-
-  const rows = selected.map(f =>
-    headers.map(h => `"${f.properties[h] || ""}"`).join(",")
-  );
-
-  const csv = [headers.join(","), ...rows].join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "selected_grids.csv";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-map.on("draw.create", e => {
-  const drawn = e.features[0];
-
-  runSelection(drawn);
-});
   
 </script>
 
