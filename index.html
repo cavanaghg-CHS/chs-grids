@@ -401,9 +401,14 @@ function updateLayerVisibility(id, visible) {
   }
 
   if (id === "togglePorts") {
-    setVisibilitySafe("ports-fill", v);
-    setVisibilitySafe("ports-outline", v);
+  setVisibilitySafe("ports-fill", v);
+  setVisibilitySafe("ports-outline", v);
+
+  if (visible) {
+    map.moveLayer("ports-fill");
+    map.moveLayer("ports-outline");
   }
+}
 }
 
 document.getElementById("toggleOverview").onchange = e => {
@@ -668,6 +673,10 @@ Promise.all([
       ]
     }
   });
+
+map.moveLayer("ports-fill");
+map.moveLayer("ports-outline");
+ 
 
 map.on("mousemove", "ports-fill", e => {
 
