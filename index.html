@@ -646,20 +646,34 @@ map.on("mousemove", "overview-fill", e => {
 
   const id = e.features[0].id;
 
- if (hoveredIds.overview !== null && hoveredIds.overview !== id) {
-  map.setFeatureState({ source: "overview", id: hoveredIds.overview }, { hover: false });
-}
+  if (hoveredIds.overview !== null && hoveredIds.overview !== id) {
+    map.setFeatureState(
+      { source: "overview", id: hoveredIds.overview },
+      { hover: false }
+    );
+  }
 
-hoveredIds.overview = id;
-  map.setFeatureState({ source: "overview", id }, { hover: true });
+  hoveredIds.overview = id;
+
+  map.setFeatureState(
+    { source: "overview", id },
+    { hover: true }
+  );
 
   map.getCanvas().style.cursor = "pointer";
 
-  hoverPopup.setLngLat(e.lngLat);
+  const props = e.features[0].properties;
 
-  hoverPopup
-    .setHTML(`<strong>Overview</strong>`)
-    .addTo(map);
+hoverPopup
+  .setLngLat(e.lngLat)
+  .setHTML(`
+    <strong>Overview</strong>
+    <div style="margin-top:4px;">
+      <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
+      <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
+    </div>
+  `)
+  .addTo(map);
 });
 
 map.on("mouseleave", "overview-fill", () => {
@@ -696,7 +710,7 @@ map.addLayer({
   }
 });
 
-  map.on("mousemove", "transit-fill", e => {
+ map.on("mousemove", "transit-fill", e => {
   if (isDrawing) return;
 
   const id = e.features[0].id;
@@ -717,11 +731,21 @@ map.addLayer({
 
   map.getCanvas().style.cursor = "pointer";
 
-  hoverPopup.setLngLat(e.lngLat);
+  const props = e.features[0].properties;
+
   hoverPopup
-    .setHTML(`<strong>Transit</strong>`)
-    .addTo(map);
+  .setLngLat(e.lngLat)
+  .setHTML(`
+    <strong>Transit</strong>
+    <div style="margin-top:4px;">
+      <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
+      <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
+    </div>
+  `)
+  .addTo(map);
 });
+
+
   
   map.on("mouseleave", "transit-fill", () => {
   if (hoveredIds.transit !== null) {
@@ -835,18 +859,18 @@ map.on("mousemove", "ports-fill", e => {
 
   const props = e.features[0].properties;
 
-  hoverPopup.setLngLat(e.lngLat);
+  hoverPopup
+    .setLngLat(e.lngLat)
+    .setHTML(`
+      <strong>Port</strong>
+      <div style="margin-top:4px;">
+        <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
+        <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
+      </div>
+    `)
+    .addTo(map);
 
-  if (popupId !== id) {
-    hoverPopup.setHTML(`
-      <strong>S-57</strong>
-      ${props["S-57"] || "—"}
-      <strong>S-101</strong>
-      ${props["S-101"] || "—"}
-    `).addTo(map);
-
-    popupId = id;
-  }
+  popupId = id;
 });
 
 map.on("mouseleave", "ports-fill", () => {
