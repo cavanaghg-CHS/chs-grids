@@ -400,13 +400,15 @@ function updateLayerVisibility(id, visible) {
     setVisibilitySafe("transit-outline", v);
   }
 
-  if (id === "togglePorts") {
+if (id === "togglePorts") {
   setVisibilitySafe("ports-fill", v);
   setVisibilitySafe("ports-outline", v);
+  setVisibilitySafe("ports-hit", v);
 
   if (visible) {
     map.moveLayer("ports-fill");
     map.moveLayer("ports-outline");
+    map.moveLayer("ports-hit");  // ✅ important
   }
 }
 }
@@ -653,6 +655,17 @@ Promise.all([
     }
   });
 
+map.addLayer({
+  id: "ports-hit",
+  type: "fill",
+  source: "ports",
+  layout: { visibility: "none" },  // controlled by toggle
+  paint: {
+    "fill-color": "#000000",
+    "fill-opacity": 0.01   // invisible but fully interactive
+  }
+});
+  
   map.addLayer({
     id: "ports-outline",
     type: "line",
@@ -674,17 +687,17 @@ Promise.all([
 
 map.moveLayer("ports-fill");
 map.moveLayer("ports-outline");
- 
+map.moveLayer("ports-hit"); 
 
 map.on("mousemove", e => {
-  if (!map.getLayer("ports-fill")) return;
-  if (map.getLayoutProperty("ports-fill", "visibility") !== "visible") return;
+  if (!map.getLayer("ports-hit")) return;
+  if (map.getLayoutProperty("ports-hit", "visibility") !== "visible") return;
+
   const features = map.queryRenderedFeatures(e.point, {
-    layers: ["ports-fill"]
+    layers: ["ports-hit"]
   });
 
   if (!features.length) {
-    // reset hover when leaving ports
     if (hoveredIds.ports !== null) {
       map.setFeatureState(
         { source: "ports", id: hoveredIds.ports },
