@@ -297,17 +297,11 @@ font-size: 10px;
 const isFrench = navigator.language?.toLowerCase().startsWith("fr");
 const UI = isFrench
   ? {
-      // Panel
       selectedDocuments: "Documents sélectionnés",
       clearAll: "Tout effacer",
       exportCsv: "Exporter CSV",
       exportJson: "Exporter JSON",
 
-    
-document.getElementById("layerTitle").textContent =
-  isFrench ? "Couches" : "Layers";
-
-      // Toolbar tooltips
       select: "Sélectionner",
       polygon: "Sélection par polygone",
       line: "Sélection par ligne",
@@ -315,10 +309,31 @@ document.getElementById("layerTitle").textContent =
       zoomIn: "Zoom avant",
       zoomOut: "Zoom arrière",
 
-      // Popup labels
       documentId: "Id du document",
       date: "Date"
     }
+  : {
+      selectedDocuments: "Selected Documents",
+      clearAll: "Clear all",
+      exportCsv: "Export CSV",
+      exportJson: "Export JSON",
+
+      select: "Select",
+      polygon: "Polygon select",
+      line: "Line select",
+      delete: "Delete geometry",
+      zoomIn: "Zoom in",
+      zoomOut: "Zoom out",
+
+      documentId: "Document ID",
+      date: "Date"
+    };
+
+  
+document.getElementById("layerTitle").textContent =
+  isFrench ? "Couches" : "Layers";
+
+  
   : {
       // Panel
       selectedDocuments: "Selected Documents",
