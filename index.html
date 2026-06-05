@@ -688,10 +688,20 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
-  if (hoveredIds.ports === id) {
-  hoverPopup.setLngLat(e.lngLat);
-  return;
+// ensure state exists at least once
+if (hoveredIds.ports === null) {
+  hoveredIds.ports = id;
+  map.setFeatureState(
+    { source: "ports", id },
+    { hover: true }
+  );
 }
+
+if (hoveredIds.ports === id) {
+  hoverPopup.setLngLat(e.lngLat);
+  return;   // keep this BUT only if hover already active
+}
+
 
 if (
   hoveredIds.ports !== null &&
