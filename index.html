@@ -451,7 +451,11 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
-  if (hoveredIds.overview === id) return;
+  if (hoveredIds.overview === id) {
+  hoverPopup.setLngLat(e.lngLat);   // ✅ keep popup moving
+  return;
+}
+
 
   if (hoveredIds.overview !== null && hoveredIds.overview !== id) {
     map.setFeatureState(
@@ -531,8 +535,11 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
-if (hoveredIds.transit === id) return;
-   
+if (hoveredIds.transit === id) {
+  hoverPopup.setLngLat(e.lngLat);
+  return;
+}
+
   if (
   hoveredIds.transit !== null &&
   hoveredIds.transit !== id
@@ -671,7 +678,10 @@ if (feature.id == null) return;
 
 const id = feature.id;
 
-  if (hoveredIds.ports === id) return;
+  if (hoveredIds.ports === id) {
+  hoverPopup.setLngLat(e.lngLat);
+  return;
+}
 
 if (
   hoveredIds.ports !== null &&
