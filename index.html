@@ -230,12 +230,12 @@ font-size: 10px;
 }
 
 .maplibregl-popup.hover-popup strong {
-  display: block;
+  display: inline;
   font-weight: 600;
   font-size: 11px;
   color: #475569;
-  margin-bottom: 2px;
 }
+
 
 .maplibregl-popup-tip {
   border-top-color: rgba(255,255,255,0.95) !important;
@@ -667,8 +667,10 @@ map.on("mousemove", "overview-fill", e => {
 hoverPopup
   .setLngLat(e.lngLat)
   .setHTML(`
-    <strong>Overview</strong>
-    <div style="margin-top:4px;">
+    <div style="font-weight:600; font-size:12px; margin-bottom:4px;">
+      Overview
+    </div>
+    <div>
       <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
       <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
     </div>
@@ -736,8 +738,10 @@ map.addLayer({
   hoverPopup
   .setLngLat(e.lngLat)
   .setHTML(`
-    <strong>Transit</strong>
-    <div style="margin-top:4px;">
+    <div style="font-weight:600; font-size:12px; margin-bottom:4px;">
+      Transit
+    </div>
+    <div>
       <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
       <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
     </div>
@@ -859,16 +863,18 @@ map.on("mousemove", "ports-fill", e => {
 
   const props = e.features[0].properties;
 
-  hoverPopup
-    .setLngLat(e.lngLat)
-    .setHTML(`
-      <strong>Port</strong>
-      <div style="margin-top:4px;">
-        <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
-        <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
-      </div>
-    `)
-    .addTo(map);
+hoverPopup
+  .setLngLat(e.lngLat)
+  .setHTML(`
+    <div style="font-weight:600; font-size:12px; margin-bottom:4px;">
+      Port
+    </div>
+    <div>
+      <div><strong>S-57:</strong> ${props["S-57"] || "—"}</div>
+      <div><strong>S-101:</strong> ${props["S-101"] || "—"}</div>
+    </div>
+  `)
+  .addTo(map);
 
   popupId = id;
 });
