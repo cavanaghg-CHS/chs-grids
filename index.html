@@ -329,6 +329,12 @@ const UI = isFrench
       date: "Date"
     };
 
+const toolSelect = document.getElementById("toolSelect");
+const toolPolygon = document.getElementById("toolPolygon");
+const toolLine = document.getElementById("toolLine");
+const zoomIn = document.getElementById("zoomIn");
+const zoomOut = document.getElementById("zoomOut");
+
 
 const STYLE_EN =
   "https://www.arcgis.com/sharing/rest/content/items/800d755712e8415aab301b9d55bc2800/resources/styles/root.json";
@@ -343,6 +349,12 @@ const map = new maplibregl.Map({
   attributionControl: false
 });
 
+const hoverPopup = new maplibregl.Popup({
+  closeButton: false,
+  closeOnClick: false
+});
+
+  
 const draw = new MapboxDraw({
   displayControlsDefault: false,
   controls: { polygon: true, line_string: true, trash: true },
@@ -677,6 +689,12 @@ Promise.all([
   });
 
   cached = merged.features;
+
+  
+updateLayerVisibility("toggleOverview", true);
+updateLayerVisibility("toggleTransit", false);
+updateLayerVisibility("togglePorts", false);
+
 });
 
 map.on("click", "ports-fill", e => {
