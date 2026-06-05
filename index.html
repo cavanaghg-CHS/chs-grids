@@ -12,6 +12,7 @@
   <link rel="stylesheet"
         href="https://unpkg.com/@mapbox/mapbox-gl-draw@1.5.0/dist/mapbox-gl-draw.css">
 
+  
   <style>
     html, body, #map {
       margin: 0;
@@ -553,6 +554,11 @@ let cachedTransit = [];
 let cachedOverview = [];
   let isDrawing = false;
   let selectedIds = new Set();
+  
+let transitReady = false;
+let portsReady = false;
+let overviewReady = false;
+
 function isValid(feature) {
   return (
     feature &&
@@ -563,6 +569,8 @@ function isValid(feature) {
   );
 }
 
+  
+  
 function select(feature) {
   if (!feature || feature.id == null) return;
 
@@ -602,6 +610,10 @@ fetch("data/Overview.geojson")
       type: "FeatureCollection",
       features: cachedOverview
     });
+map.once("idle", () => {
+  overviewReady = true;
+});
+    
   });
 
 
@@ -625,21 +637,27 @@ function setExclusive(activeId) {
 
   isUpdating = false;
 }
+function setVisibilitySafe(layerId, visibility) {
+  if (map.getLayer(layerId)) {
+    map.setLayoutProperty(layerId, "visibility", visibility);
+  }
+}
+
 function updateLayerVisibility(id, visible) {
   const v = visible ? "visible" : "none";
 
   if (id === "toggleOverview") {
-    map.setLayoutProperty("overview-fill", "visibility", v);
+    setVisibilitySafe("overview-fill", v);
   }
 
   if (id === "toggleTransit") {
-    map.setLayoutProperty("transit-fill", "visibility", v);
-    map.setLayoutProperty("transit-outline", "visibility", v);
+    setVisibilitySafe("transit-fill", v);
+    setVisibilitySafe("transit-outline", v);
   }
 
   if (id === "togglePorts") {
-    map.setLayoutProperty("ports-fill", "visibility", v);
-    map.setLayoutProperty("ports-outline", "visibility", v);
+    setVisibilitySafe("ports-fill", v);
+    setVisibilitySafe("ports-outline", v);
   }
 }
 
@@ -676,9 +694,16 @@ map.addLayer({
   }
 });
 map.on("mousemove", "overview-fill", e => {
-  if (isDrawing) return;
 
-  const id = e.features[0].id;
+if (isDrawing || !overviewReady) return;
+
+if (!e.features || !e.features.length) return;
+
+const feature = e.features[0];
+if (feature.id == null) return;
+
+const id = feature.id;
+
 
   if (hoveredIds.overview !== null && hoveredIds.overview !== id) {
     map.setFeatureState(
@@ -732,18 +757,26 @@ map.addSource("transit", {
   
 fetch("data/Transit.geojson")
   .then(r => r.json())
-  .then(data => {
-    cachedTransit = data.features.map((f, i) => {
-      f.id = f.id ?? i;
-      f._layer = "transit";
-      return f;
-    });
-
-    map.getSource("transit").setData({
-      type: "FeatureCollection",
-      features: cachedTransit
-    });
+ .then(data => {
+  cachedTransit = data.features.map((f, i) => {
+    f.id = f.id ?? i;
+    f._layer = "transit";
+    return f;
   });
+
+  map.getSource("transit").setData({
+    type: "FeatureCollection",
+    features: cachedTransit
+  });
+   map.once("idle", () => {
+  transitReady = true;
+});
+
+  map.once("idle", () => {
+    transitReady = true;
+  });
+});
+
 
 map.addLayer({
   id: "transit-fill",
@@ -761,9 +794,15 @@ map.addLayer({
 });
 
  map.on("mousemove", "transit-fill", e => {
-  if (isDrawing) return;
+ if (isDrawing || !transitReady) return;
 
-  const id = e.features[0].id;
+if (!e.features || !e.features.length) return;
+
+const feature = e.features[0];
+if (feature.id == null) return;
+
+const id = feature.id;
+
 
   if (hoveredIds.transit !== null && hoveredIds.transit !== id) {
     map.setFeatureState(
@@ -844,6 +883,8 @@ Promise.all([
     features: files.flatMap(f => f.features)
   };
 
+
+
   map.addSource("ports", {
     type: "geojson",
     data: merged,
@@ -895,6 +936,12 @@ map.getSource("ports").setData({
   type: "FeatureCollection",
   features: cachedPorts
 });
+
+  
+map.once("idle", () => {
+  portsReady = true;
+});
+
   
 // ✅ EVENTS MUST BE REGISTERED AFTER LAYER EXISTS
 
@@ -903,9 +950,15 @@ map.on("click", "ports-fill", e => {
 });
 
 map.on("mousemove", "ports-fill", e => {
-  if (isDrawing) return;
+if (isDrawing || !portsReady) return;
 
-  const id = e.features[0].id;
+if (!e.features || !e.features.length) return;
+
+const feature = e.features[0];
+if (feature.id == null) return;
+
+const id = feature.id;
+
 
   if (hoveredIds.ports !== null && hoveredIds.ports !== id) {
     map.setFeatureState(
