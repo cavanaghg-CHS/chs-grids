@@ -21,7 +21,7 @@
 .layers-panel {
   position: absolute;
   top: 10px;   /* ✅ better spacing below zoom */
-  left: 50px;
+  left: 52px;
   width: 170px; /* ✅ prevents stretching */
 
   background: rgba(255,255,255,0.92);
@@ -216,6 +216,30 @@ font-size: 10px;
   display: none !important;
 }
 
+/* ✅ Professional hover popup */
+.maplibregl-popup.hover-popup .maplibregl-popup-content {
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+
+  border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(4px);
+}
+
+.maplibregl-popup.hover-popup strong {
+  display: block;
+  font-weight: 600;
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: rgba(255,255,255,0.95) !important;
+}
 
     
   </style>
@@ -351,7 +375,9 @@ const map = new maplibregl.Map({
 
 const hoverPopup = new maplibregl.Popup({
   closeButton: false,
-  closeOnClick: false
+  closeOnClick: false,
+  offset: 12,
+  className: "hover-popup"
 });
 
   
@@ -740,13 +766,20 @@ map.on("mousemove", "ports-fill", e => {
   map.getCanvas().style.cursor = "pointer";
 const props = e.features[0].properties;
 
+// ✅ ALWAYS move popup (smooth tracking)
+hoverPopup.setLngLat(e.lngLat);
+
+// ✅ Only update content when feature changes
 if (popupId !== id) {
-hoverPopup
-  .setLngLat(e.lngLat)
-  .setHTML(`
-    <strong>${UI.documentId}:</strong> ${id}
-  `)
-  .addTo(map);
+  hoverPopup
+    .setHTML(`
+      <strong>S-57</strong>
+      ${props["S-57"] || "—"}
+      <strong>S-101</strong>
+      ${props["S-101"] || "—"}
+    `)
+    .addTo(map);
+
   popupId = id;
 }
 
