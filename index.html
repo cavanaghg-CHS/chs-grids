@@ -241,25 +241,6 @@ font-size: 10px;
 <body>
 
 <div id="map"></div>
-  
-<!-- TOOLBOX (drawing + zoom only) -->
-<div class="toolbox">
-
-  <button id="toolSelect" title="Select" class="tool-btn">
-    <svg width="16" height="16" viewBox="0 0 16 16">
-      <path d="M2 1 L2 14 L5 11 L7 15 L9 14 L7 10 L11 10 Z" fill="#0f172a"/>
-    </svg>
-  </button>
-
-  <button id="toolPolygon" title="Polygon">⬠</button>
-  <button id="toolLine" title="Line select">／</button>
-
-  <div class="divider"></div>
-
-  <button id="zoomIn">+</button>
-  <button id="zoomOut">−</button>
-
-</div>
 
 
 <!-- ✅ SEPARATE LAYERS PANEL -->
@@ -338,12 +319,6 @@ const UI = isFrench
       date: "Date"
     };
 
-const toolSelect = document.getElementById("toolSelect");
-const toolPolygon = document.getElementById("toolPolygon");
-const toolLine = document.getElementById("toolLine");
-const zoomIn = document.getElementById("zoomIn");
-const zoomOut = document.getElementById("zoomOut");
-
 
 const STYLE_EN =
   "https://www.arcgis.com/sharing/rest/content/items/800d755712e8415aab301b9d55bc2800/resources/styles/root.json";
@@ -365,26 +340,6 @@ const hoverPopup = new maplibregl.Popup({
   className: "hover-popup"
 });
 
-function setActive(btn) {
-  document.querySelectorAll(".toolbox button")
-    .forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-}
-
-// ---- Toolbar tooltips (language-dependent) ----
-toolSelect.title = UI.select;
-toolPolygon.title = UI.polygon;
-toolLine.title = UI.line;
-zoomIn.title = UI.zoomIn;
-zoomOut.title = UI.zoomOut;
-
-
-zoomIn.onclick = () => map.zoomIn();
-zoomOut.onclick = () => map.zoomOut();
-
-// Default mode
-setActive(toolSelect);
-
 let hoveredIds = {
   overview: null,
   transit: null,
@@ -399,6 +354,11 @@ let transitReady = false;
 let portsReady = false;
 let overviewReady = false;
 
+map.addControl(
+  new maplibregl.NavigationControl({ showCompass: false }),
+  "top-left"
+);
+  
 map.on("load", () => {
 
   // ✅ Fix label safely here
