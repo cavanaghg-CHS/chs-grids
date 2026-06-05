@@ -520,47 +520,64 @@ map.on("load", () => {
   data: "data/Overview.geojson"
 });
 
-  function setExclusive(activeId) {
+let isUpdating = false;
+
+function setExclusive(activeId) {
+  if (isUpdating) return;
+  isUpdating = true;
+
   ["toggleOverview", "toggleTransit", "togglePorts"].forEach(id => {
     const el = document.getElementById(id);
 
-    if (id !== activeId) {
+    if (id !== activeId && el.checked) {
       el.checked = false;
-      el.dispatchEvent(new Event("change"));
+
+      // ✅ directly set layer instead of firing onchange
+      updateLayerVisibility(id, false);
     }
   });
+
+  isUpdating = false;
+}
+function updateLayerVisibility(id, visible) {
+  const v = visible ? "visible" : "none";
+
+  if (id === "toggleOverview") {
+    map.setLayoutProperty("overview-fill", "visibility", v);
+  }
+
+  if (id === "toggleTransit") {
+    map.setLayoutProperty("transit-fill", "visibility", v);
+    map.setLayoutProperty("transit-outline", "visibility", v);
+  }
+
+  if (id === "togglePorts") {
+    map.setLayoutProperty("ports-fill", "visibility", v);
+    map.setLayoutProperty("ports-outline", "visibility", v);
+  }
 }
 
 // OVERVIEW
 document.getElementById("toggleOverview").onchange = e => {
   setExclusive("toggleOverview");
-
-  map.setLayoutProperty(
-    "overview-fill",
-    "visibility",
-    e.target.checked ? "visible" : "none"
-  );
+  updateLayerVisibility("toggleOverview", e.target.checked);
 };
+
 
 // TRANSIT
 document.getElementById("toggleTransit").onchange = e => {
   setExclusive("toggleTransit");
-
-  const v = e.target.checked ? "visible" : "none";
-
-  map.setLayoutProperty("transit-fill", "visibility", v);
-  map.setLayoutProperty("transit-outline", "visibility", v);
+  updateLayerVisibility("toggleTransit", e.target.checked);
 };
+
 
 // PORTS
 document.getElementById("togglePorts").onchange = e => {
   setExclusive("togglePorts");
-
-  const v = e.target.checked ? "visible" : "none";
-
-  map.setLayoutProperty("ports-fill", "visibility", v);
-  map.setLayoutProperty("ports-outline", "visibility", v);
+  updateLayerVisibility("togglePorts", e.target.checked);
 };
+
+  
 map.addLayer({
   id: "overview-fill",
   type: "fill",
