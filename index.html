@@ -627,7 +627,7 @@ Promise.all([
   type: "FeatureCollection",
   features: files.flatMap((f, i1) =>
     f.features.map((feat, i2) => {
-      feat.id = feat.id ?? `${i1}-${i2}`;
+      feat.id = feat.id ?? (i1 * 100000 + i2);
       return feat;
     })
   )
@@ -638,6 +638,7 @@ Promise.all([
   map.addSource("ports", {
     type: "geojson",
     data: merged,
+    promoteId: "id"
   });
 
   map.addLayer({
